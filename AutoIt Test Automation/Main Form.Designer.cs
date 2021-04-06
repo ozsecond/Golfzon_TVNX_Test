@@ -45,11 +45,12 @@
             this.TXTrepeat = new System.Windows.Forms.TextBox();
             this.LBLbuildVer = new System.Windows.Forms.Label();
             this.CHKnasmo = new System.Windows.Forms.CheckBox();
+            this.LBLholeEx = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // BTNstart
             // 
-            this.BTNstart.Font = new System.Drawing.Font("나눔명조", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.BTNstart.Font = new System.Drawing.Font("맑은 고딕", 11.25F);
             this.BTNstart.Location = new System.Drawing.Point(370, 33);
             this.BTNstart.Margin = new System.Windows.Forms.Padding(4);
             this.BTNstart.Name = "BTNstart";
@@ -61,7 +62,7 @@
             // 
             // button1
             // 
-            this.button1.Font = new System.Drawing.Font("나눔명조", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.button1.Font = new System.Drawing.Font("맑은 고딕", 11.25F);
             this.button1.Location = new System.Drawing.Point(855, 87);
             this.button1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.button1.Name = "button1";
@@ -73,7 +74,7 @@
             // 
             // button2
             // 
-            this.button2.Font = new System.Drawing.Font("나눔명조", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.button2.Font = new System.Drawing.Font("맑은 고딕", 11.25F);
             this.button2.Location = new System.Drawing.Point(855, 123);
             this.button2.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.button2.Name = "button2";
@@ -96,11 +97,11 @@
             // 
             // TXTpassword
             // 
-            this.TXTpassword.Font = new System.Drawing.Font("나눔명조", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.TXTpassword.Font = new System.Drawing.Font("맑은 고딕", 11.25F);
             this.TXTpassword.Location = new System.Drawing.Point(114, 33);
             this.TXTpassword.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.TXTpassword.Name = "TXTpassword";
-            this.TXTpassword.Size = new System.Drawing.Size(200, 25);
+            this.TXTpassword.Size = new System.Drawing.Size(200, 27);
             this.TXTpassword.TabIndex = 6;
             this.TXTpassword.Text = "1";
             // 
@@ -109,7 +110,7 @@
             this.LBLpassword.AutoSize = true;
             this.LBLpassword.Location = new System.Drawing.Point(18, 36);
             this.LBLpassword.Name = "LBLpassword";
-            this.LBLpassword.Size = new System.Drawing.Size(89, 17);
+            this.LBLpassword.Size = new System.Drawing.Size(93, 20);
             this.LBLpassword.TabIndex = 7;
             this.LBLpassword.Text = "GS 비밀번호";
             // 
@@ -122,7 +123,7 @@
             "TWOVISION"});
             this.CBBgsType.Location = new System.Drawing.Point(114, 79);
             this.CBBgsType.Name = "CBBgsType";
-            this.CBBgsType.Size = new System.Drawing.Size(200, 25);
+            this.CBBgsType.Size = new System.Drawing.Size(200, 28);
             this.CBBgsType.TabIndex = 8;
             // 
             // LBLgsType
@@ -130,26 +131,26 @@
             this.LBLgsType.AutoSize = true;
             this.LBLgsType.Location = new System.Drawing.Point(19, 82);
             this.LBLgsType.Name = "LBLgsType";
-            this.LBLgsType.Size = new System.Drawing.Size(61, 17);
+            this.LBLgsType.Size = new System.Drawing.Size(63, 20);
             this.LBLgsType.TabIndex = 7;
             this.LBLgsType.Text = "GS 타입";
             // 
             // TXTccName
             // 
-            this.TXTccName.Font = new System.Drawing.Font("나눔명조", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.TXTccName.Font = new System.Drawing.Font("맑은 고딕", 11.25F);
             this.TXTccName.Location = new System.Drawing.Point(114, 127);
             this.TXTccName.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.TXTccName.Name = "TXTccName";
-            this.TXTccName.Size = new System.Drawing.Size(200, 25);
+            this.TXTccName.Size = new System.Drawing.Size(200, 27);
             this.TXTccName.TabIndex = 6;
-            this.TXTccName.Text = "골프존카운티 선운";
+            this.TXTccName.Text = "gtour 마운틴";
             // 
             // LBLccName
             // 
             this.LBLccName.AutoSize = true;
             this.LBLccName.Location = new System.Drawing.Point(19, 130);
             this.LBLccName.Name = "LBLccName";
-            this.LBLccName.Size = new System.Drawing.Size(44, 17);
+            this.LBLccName.Size = new System.Drawing.Size(44, 20);
             this.LBLccName.TabIndex = 7;
             this.LBLccName.Text = "CC명";
             // 
@@ -165,11 +166,11 @@
             // 
             // TXThole
             // 
-            this.TXThole.Font = new System.Drawing.Font("나눔명조", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.TXThole.Font = new System.Drawing.Font("맑은 고딕", 11.25F);
             this.TXThole.Location = new System.Drawing.Point(114, 178);
             this.TXThole.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.TXThole.Name = "TXThole";
-            this.TXThole.Size = new System.Drawing.Size(200, 25);
+            this.TXThole.Size = new System.Drawing.Size(200, 27);
             this.TXThole.TabIndex = 11;
             this.TXThole.Text = "1";
             // 
@@ -178,7 +179,7 @@
             this.LBLhole.AutoSize = true;
             this.LBLhole.Location = new System.Drawing.Point(19, 181);
             this.LBLhole.Name = "LBLhole";
-            this.LBLhole.Size = new System.Drawing.Size(50, 17);
+            this.LBLhole.Size = new System.Drawing.Size(54, 20);
             this.LBLhole.TabIndex = 12;
             this.LBLhole.Text = "작업홀";
             // 
@@ -187,17 +188,17 @@
             this.LBLrepeat.AutoSize = true;
             this.LBLrepeat.Location = new System.Drawing.Point(19, 231);
             this.LBLrepeat.Name = "LBLrepeat";
-            this.LBLrepeat.Size = new System.Drawing.Size(64, 17);
+            this.LBLrepeat.Size = new System.Drawing.Size(69, 20);
             this.LBLrepeat.TabIndex = 13;
             this.LBLrepeat.Text = "반복횟수";
             // 
             // TXTrepeat
             // 
-            this.TXTrepeat.Font = new System.Drawing.Font("나눔명조", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.TXTrepeat.Font = new System.Drawing.Font("맑은 고딕", 11.25F);
             this.TXTrepeat.Location = new System.Drawing.Point(114, 228);
             this.TXTrepeat.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.TXTrepeat.Name = "TXTrepeat";
-            this.TXTrepeat.Size = new System.Drawing.Size(200, 25);
+            this.TXTrepeat.Size = new System.Drawing.Size(200, 27);
             this.TXTrepeat.TabIndex = 11;
             this.TXTrepeat.Text = "1";
             // 
@@ -206,7 +207,7 @@
             this.LBLbuildVer.AutoSize = true;
             this.LBLbuildVer.Location = new System.Drawing.Point(871, 9);
             this.LBLbuildVer.Name = "LBLbuildVer";
-            this.LBLbuildVer.Size = new System.Drawing.Size(134, 17);
+            this.LBLbuildVer.Size = new System.Drawing.Size(133, 20);
             this.LBLbuildVer.TabIndex = 7;
             this.LBLbuildVer.Text = "ver. 000000000000";
             this.LBLbuildVer.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
@@ -216,16 +217,26 @@
             this.CHKnasmo.AutoSize = true;
             this.CHKnasmo.Location = new System.Drawing.Point(114, 276);
             this.CHKnasmo.Name = "CHKnasmo";
-            this.CHKnasmo.Size = new System.Drawing.Size(135, 21);
+            this.CHKnasmo.Size = new System.Drawing.Size(143, 24);
             this.CHKnasmo.TabIndex = 14;
             this.CHKnasmo.Text = "나스모 광고 체크";
             this.CHKnasmo.UseVisualStyleBackColor = true;
+            // 
+            // LBLholeEx
+            // 
+            this.LBLholeEx.AutoSize = true;
+            this.LBLholeEx.Location = new System.Drawing.Point(321, 181);
+            this.LBLholeEx.Name = "LBLholeEx";
+            this.LBLholeEx.Size = new System.Drawing.Size(96, 20);
+            this.LBLholeEx.TabIndex = 15;
+            this.LBLholeEx.Text = "(ex. 1, 3, 5-8)";
             // 
             // FORMmain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.ClientSize = new System.Drawing.Size(1017, 637);
+            this.Controls.Add(this.LBLholeEx);
             this.Controls.Add(this.CHKnasmo);
             this.Controls.Add(this.LBLrepeat);
             this.Controls.Add(this.LBLhole);
@@ -243,7 +254,7 @@
             this.Controls.Add(this.button1);
             this.Controls.Add(this.TXTlog);
             this.Controls.Add(this.BTNstart);
-            this.Font = new System.Drawing.Font("나눔명조", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.Font = new System.Drawing.Font("맑은 고딕", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.Margin = new System.Windows.Forms.Padding(4);
             this.Name = "FORMmain";
             this.Text = "AutoIt Test Automation";
@@ -271,6 +282,7 @@
         private System.Windows.Forms.TextBox TXTrepeat;
         private System.Windows.Forms.Label LBLbuildVer;
         private System.Windows.Forms.CheckBox CHKnasmo;
+        private System.Windows.Forms.Label LBLholeEx;
     }
 }
 
