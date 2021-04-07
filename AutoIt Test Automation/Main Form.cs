@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
 using System.IO;
@@ -39,21 +40,21 @@ namespace AutoIt_Test_Automation
 
 
         // 클래스 컨트롤 인스턴스
+        public static FORMmain mainForm;
         LogControl LOG = new LogControl();
 
 
 
         // 템프폴더 패스
-        private string _imagePath;
-        private string _tempPath = Application.StartupPath + @"\temp\";
-        private string _resultPath = Application.StartupPath + @"\Result\";
+        private static string _imagePath;
+        private static string _tempPath = Application.StartupPath + @"\temp\";
+        private static string _resultPath = Application.StartupPath + @"\Result\";
 
 
 
         // 이미지 시퀀스 저장 리스트
-        private List<string> _inputImageSequence = new List<string>();
-        private int _fileCount = 1;
-
+        private static List<string> _inputImageSequence = new List<string>();
+        private static int _fileCount = 1;
 
 
 
@@ -71,7 +72,7 @@ namespace AutoIt_Test_Automation
 
 
         // 작업홀         
-        private string[] _workHoles;        
+        private string[] _workHoles;
         private int _repeatCount = 1;
 
 
@@ -83,10 +84,15 @@ namespace AutoIt_Test_Automation
 
 
         // 한글 초중종성 유니코드 분석용 
-        public static readonly char[] CHOSUNG_TABLE = {'ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'};
-        public static readonly char[] JUNGSUNG_TABLE = {'ㅏ', 'ㅐ', 'ㅑ', 'ㅒ', 'ㅓ', 'ㅔ', 'ㅕ', 'ㅖ', 'ㅗ', 'ㅘ', 'ㅙ', 'ㅚ', 'ㅛ', 'ㅜ', 'ㅝ', 'ㅞ', 'ㅟ', 'ㅠ', 'ㅡ', 'ㅢ', 'ㅣ'};
+        public static readonly char[] CHOSUNG_TABLE = { 'ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ' };
+        public static readonly char[] JUNGSUNG_TABLE = { 'ㅏ', 'ㅐ', 'ㅑ', 'ㅒ', 'ㅓ', 'ㅔ', 'ㅕ', 'ㅖ', 'ㅗ', 'ㅘ', 'ㅙ', 'ㅚ', 'ㅛ', 'ㅜ', 'ㅝ', 'ㅞ', 'ㅟ', 'ㅠ', 'ㅡ', 'ㅢ', 'ㅣ' };
         public static readonly char[] JONGSUNG_TABLE = { ' ', 'ㄱ', 'ㄲ', 'ㄳ', 'ㄴ', 'ㄵ', 'ㄶ', 'ㄷ', 'ㄹ', 'ㄺ', 'ㄻ', 'ㄼ', 'ㄽ', 'ㄾ', 'ㄿ', 'ㅀ', 'ㅁ', 'ㅂ', 'ㅄ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ' };
-        
+
+
+        // 레코딩 스레드 변수
+        private Thread _tRecording;
+        private static DateTime _recordingStartTime;
+
 
         #endregion
 
@@ -95,14 +101,14 @@ namespace AutoIt_Test_Automation
         public FORMmain()
         {
             InitializeComponent();
-
+            mainForm = this;
 
             // 빌드버전 표시
-            LBLbuildVer.Text = "ver." + Assembly.GetExecutingAssembly().GetName().Version;            
+            LBLbuildVer.Text = "ver." + Assembly.GetExecutingAssembly().GetName().Version;
 
 
             // 로그 초기화            
-            LOG.SetLogFileName();            
+            LOG.SetLogFileName();
 
 
             // 템프 및 이미지 폴더 생성
@@ -122,7 +128,7 @@ namespace AutoIt_Test_Automation
         {
             // 패스워드 변수 입력
             _password = TXTpassword.Text;
-            LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : GS 패스워드 : " + _password);
+            LOG.Write("GS 패스워드 : " + _password);
 
             // GS 타입 반영 << 향후 수정 필요
             GS_TYPE = CBBgsType.Text;
@@ -131,6 +137,7 @@ namespace AutoIt_Test_Automation
             switch (GS_TYPE)
             {
                 case "VISION":
+                default:
                     DEFAULT_APP_NAME = "GolfZonCilent";
                     _imagePath = Application.StartupPath + @"\Images\Vision\";
                     _left = 0;
@@ -146,31 +153,22 @@ namespace AutoIt_Test_Automation
                     _resX = 1920;
                     _resY = 1080;
                     _left = -1920;
-
-                    break;
-                
-
-                // 입력이 없을경우 비전으로 인식
-                default:
-                    DEFAULT_APP_NAME = "GolfZonCilent";
-                    _imagePath = Application.StartupPath + @"\Images\Vision\";
-
                     break;
             }
 
             // 작업홀을 읽어옴
             string[] tempWorkHoles = TXThole.Text.Split(',');
-            Array.Resize(ref _workHoles, tempWorkHoles.Length);            
+            Array.Resize(ref _workHoles, tempWorkHoles.Length);
 
             for (int i = 0; i < tempWorkHoles.Length; i++)
             {
                 _workHoles[i] = tempWorkHoles[i].Trim();
-                LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : _workHole = " + _workHoles[i].ToString());
-            }            
+                LOG.Write("_workHole = " + _workHoles[i].ToString());
+            }
 
             // 반복횟수 읽어옴
             int repeatCount = int.Parse(TXTrepeat.Text);
-            LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : repeatCount = " + repeatCount);
+            LOG.Write("repeatCount = " + repeatCount);
 
 
             // 매크로 시작 (타이틀 화면에서)            
@@ -178,16 +176,17 @@ namespace AutoIt_Test_Automation
             {
                 case "VISION":
                 default:
-                    LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : InitVision() 실행");
-                    InitVision();                    
+                    LOG.Write("InitVision() 실행");
+                    InitVision();
                     break;
 
+
                 case "TWOVISION":
-                    LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : InitTwovision() 실행");
+                    LOG.Write("InitTwovision() 실행");
                     InitTwovision();
                     break;
             }
-            
+
 
             // 반복횟수 만큼 반복
             for (int i = 0; i < repeatCount; i++)
@@ -195,8 +194,9 @@ namespace AutoIt_Test_Automation
                 // 작업홀 만큼 반복
                 for (int j = 0; j < _workHoles.Length; j++)
                 {
-                    LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : AdCaptureSelectedHoles 실행, repeatCount = " + i.ToString() 
+                    LOG.Write("AdCaptureSelectedHoles 실행, repeatCount = " + i.ToString()
                         + " ,workHoles = " + _workHoles[j].ToString());
+
 
                     // _workHoles[j]가 숫자인지 문자열(17-18)인지 판단하여 함수를 구분
                     // 숫자로 변환이 가능할 경우 해당홀+다음홀에 나오는 로직 태움
@@ -209,14 +209,16 @@ namespace AutoIt_Test_Automation
                         switch (GS_TYPE)
                         {
                             case "VISION":
+                            default:
                                 AdCaptureSelectedHolesVision(workHoles);
                                 break;
+
 
                             case "TWOVISION":
                                 AdCaptureSelectedHolesTwovision(workHoles);
                                 break;
                         }
-                        
+
                     }
 
                     // 숫자로 변환이 불가능할 경우(ex. 1-2, 17-18 등), 연속으로 홀스킵을 시행하는 로직 태움.
@@ -265,7 +267,7 @@ namespace AutoIt_Test_Automation
                             // workHoles 배열에 Bottom부터 Top까지 +1 단위로 입력
                             int[] workHoles = new int[top - bottom + 1];
                             workHoles[0] = bottom;
-                            
+
                             for (int x = 1; x < top - bottom + 1; x++)
                             {
                                 workHoles[x] = workHoles[x - 1] + 1;
@@ -275,6 +277,7 @@ namespace AutoIt_Test_Automation
                             switch (GS_TYPE)
                             {
                                 case "VISION":
+                                default:
                                     AdCaptureSelectedHolesVision(workHoles);
                                     break;
 
@@ -286,13 +289,13 @@ namespace AutoIt_Test_Automation
                         }
                         catch (Exception error)
                         {
-                            LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : " + error.Message);
+                            LOG.Write(error.Message);
                             Application.ExitThread();
                             Environment.Exit(0);
                         }
                     }
 
-                    LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : AdCaptureSelectedHoles 완료, repeatCount = " + i.ToString()
+                    LOG.Write("AdCaptureSelectedHoles 완료, repeatCount = " + i.ToString()
                         + " ,workHoles = " + _workHoles[j].ToString());
                 }
 
@@ -301,7 +304,8 @@ namespace AutoIt_Test_Automation
 
 
             Thread.Sleep(3000);
-            LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : 코드 실행 완료");
+            LOG.Write("코드 실행 완료");
+
 
             AutoItX.WinActivate(Application.ProductName);
             MessageBox.Show("실행 완료!!!");
@@ -315,64 +319,77 @@ namespace AutoIt_Test_Automation
             try
             {
                 // 창 활성화
-                LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : 어플리케이션 창 활성화 시도");
+                LOG.Write("어플리케이션 창 활성화 시도");
                 AutoItX.WinActivate(DEFAULT_APP_NAME);
 
 
                 // 어플리케이션 핸들을 받아오지 못하면 강제 종료
                 string handle = AutoItX.WinGetHandleAsText(DEFAULT_APP_NAME);
-                LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : handle = " + handle);
+                LOG.Write("handle = " + handle);
 
                 if (handle == "0x00000000")
                 {
-                    LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : 어플리케이션 창 핸들을 받아오지 못함");
+                    LOG.Write("어플리케이션 창 핸들을 받아오지 못함");
                     throw new Exception("어플리케이션 창 핸들을 받아오지 못함");
                 }
-                LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : 어플리케이션 창 활성화 성공");
+                LOG.Write("어플리케이션 창 활성화 성공");
 
 
                 // 창 활성화까지 대기
                 Thread.Sleep(3000);
 
+                
                 // 아무키나 입력해서 비번 창을 뛰움
                 AutoItX.Send("{ENTER}");
 
-                // 비번 창 활성화까지 대기
-                Thread.Sleep(2000);
 
-                // 비번 창 텍스트 박스 클릭 (혹시 포커스가 안가있을지도 모를 사태 대비)
-                AutoItX.MouseClick("LEFT", 881, 436);
-                Thread.Sleep(3000);
+                // 비번 사용 시 
+                if (CHKusePassword.Checked)
+                {
+                    // 비번 창 활성화까지 대기
+                    Thread.Sleep(2000);
 
-                // 패스워드 입력
-                AutoItX.Send(_password);
-                Thread.Sleep(1000);
-                AutoItX.Send("{Enter}");
-                LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + "패스워드 입력 완료");
+
+                    // 비번 창 텍스트 박스 클릭 (혹시 포커스가 안가있을지도 모를 사태 대비)
+                    AutoItX.MouseClick("LEFT", 881, 436);
+                    Thread.Sleep(3000);
+
+
+                    // 패스워드 입력
+                    AutoItX.Send(_password);
+                    Thread.Sleep(1000);
+                    AutoItX.Send("{Enter}");
+                    LOG.Write("패스워드 입력 완료");                    
+                }
+
 
                 // 플레이어 설정 전환까지 대기
                 AutoItX.MouseMove(_resX, _resY);
                 Thread.Sleep(3000);
 
+
                 // 정상적으로 플레이어 설정 진입했는지 확인절차                
                 Bitmap playerConfig = CapturePartialScreen(317, 289, 169, 38, _tempPath + "플레이어설정확인");
-                LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : 플레이어 설정 진입 확인");
+                LOG.Write("플레이어 설정 진입 확인");
 
                 if (ImageToString(playerConfig).Trim() != "플레이어 설정")
                 {
-                    LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : 플레이어 설정이 아님. 매크로 종료");
+                    LOG.Write("플레이어 설정이 아님. 매크로 종료");
                     throw new Exception("플레이어 설정 진입 실패");
                 }
+
 
                 // 게스트 등록 버튼 클릭
                 AutoItX.MouseClick("LEFT", 890, 225);
                 Thread.Sleep(2000);
 
+
                 // 다음 버튼 클릭
                 AutoItX.MouseClick("LEFT", 1477, 924);
 
+
                 // 모드선택 - 대회정보를 수신할때까지 넉넉히 대기 
-                LOG.WriteLog(TXTlog, "모드선택 진입");
+                LOG.Write("모드선택 진입");
                 Thread.Sleep(5000);
             }
             catch (Exception error)
@@ -389,8 +406,7 @@ namespace AutoIt_Test_Automation
 
         // 투비전 게스트 로그인 후 모드선택까지 이동
         private void InitTwovision()
-        {  
-
+        {
             try
             {
                 // 혹시 모를 화면가림 대비를 위해 golfzonclient에 포커스를 한번 줌
@@ -404,29 +420,39 @@ namespace AutoIt_Test_Automation
 
                 // 어플리케이션 핸들을 받아오지 못하면 강제 종료
                 string handle = AutoItX.WinGetHandleAsText(DEFAULT_APP_NAME);
-                LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : handle = " + handle);
+                LOG.Write("handle = " + handle);
 
                 if (handle == "0x00000000")
                 {
-                    LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : 어플리케이션 창 핸들을 받아오지 못함");
+                    LOG.Write("어플리케이션 창 핸들을 받아오지 못함");
                     throw new Exception("어플리케이션 창 핸들을 받아오지 못함");
                 }
-                LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : 어플리케이션 창 활성화 성공");
+                LOG.Write("어플리케이션 창 활성화 성공");
 
 
                 // 창 활성화까지 대기
                 Thread.Sleep(3000);
+                LOG.Write("타이틀 초기상태 확인");
 
 
-                // 알트탭을 하면 이미 비밀번호 창이 떠 있고 포커스가 있는 상태                
-                // 초기상태 확인
-                LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : 타이틀 초기상태 확인");
-                CheckVKPasswordAndInput();                
-                LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : 패스워드 입력 완료");                
+                // 비밀번호 사용이 체크되어 있으면
+                if (CHKusePassword.Checked)
+                {
+                    // 알트탭을 하면 이미 비밀번호 창이 떠 있고 포커스가 있는 상태                
+                    // 초기상태 확인
+                    
+                    CheckVKPasswordAndInput();
+                    LOG.Write("패스워드 입력 완료");
 
 
-                // 홀/시간설정 팝업 확인 누름
-                AutoItX.MouseClick("LEFT", 840, 690);
+                    // 홀/시간설정 팝업 확인 누름
+                    AutoItX.MouseClick("LEFT", 840, 690);
+                }
+                // 비밀번호 사용이 체크되어 있지 않으면 시작 버튼만 누름
+                else
+                {
+                    AutoItX.MouseClick("LEFT", 960, 670);
+                }
 
 
                 // 플레이어 설정 전환까지 대기                
@@ -434,18 +460,19 @@ namespace AutoIt_Test_Automation
 
 
                 // 정상적으로 플레이어 설정 진입했는지 확인절차                
-                LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : 플레이어 설정 진입 확인");
+                LOG.Write("플레이어 설정 진입 확인");
 
                 Bitmap playerConfig = CapturePartialScreen(264, 134, 264, 68, _tempPath + "플레이어설정확인");
                 Bitmap playerConfig2 = new Bitmap(_imagePath + "PlayerConfig.png");
 
                 if (CompareImages(playerConfig, playerConfig2) < 98)
-                {                    
+                {
                     throw new Exception("플레이어 설정 진입 실패");
                 }
 
+
                 // 게스트 등록 버튼 클릭
-                AutoItX.MouseClick("LEFT", 894, 273);                
+                AutoItX.MouseClick("LEFT", 894, 273);
                 Thread.Sleep(3000);
 
 
@@ -454,12 +481,12 @@ namespace AutoIt_Test_Automation
 
 
                 // 모드선택 - 대회정보를 수신할때까지 넉넉히 대기 
-                LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : 모드선택 진입");
+                LOG.Write("모드선택 진입");
                 Thread.Sleep(5000);
             }
             catch (Exception error)
             {
-                LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : " + error.Message);
+                LOG.Write(error.Message);
                 AutoItX.WinActivate(Application.ProductName);
                 MessageBox.Show(error.Message);
 
@@ -478,23 +505,29 @@ namespace AutoIt_Test_Automation
                 // 홀은 시작홀
                 int firstHole = holes[0];
 
+
                 // 라이브 광고 팝업 예외처리
                 AutoItX.MouseClick("LEFT", 1013, 888);
                 Thread.Sleep(3000);
 
+
                 // 모드선택 진입확인
                 IsModeSelect();
+
 
                 // 스트로크 선택
                 AutoItX.MouseClick("LEFT", 739, 664);
                 Thread.Sleep(3000);
 
+
                 // 스트로크 상태에서 다음
                 AutoItX.MouseClick("LEFT", 1499, 914);
 
+
                 // CC 선택 - 넉넉히 대기
-                LOG.WriteLog(TXTlog, "CC선택 진입");
+                LOG.Write("CC선택 진입");
                 Thread.Sleep(5000);
+
 
                 // CC 입력 텍스트박스 선택
                 AutoItX.MouseClick("LEFT", 1469, 177);
@@ -503,67 +536,56 @@ namespace AutoIt_Test_Automation
                 Thread.Sleep(3000);
                 AutoItX.Send("{Enter}");
 
+
                 // CC 검색시간 대기
                 Thread.Sleep(3000);
+
 
                 // CC 선택에서 다음
                 AutoItX.MouseClick("LEFT", 1499, 914);
                 Thread.Sleep(3000);
 
+
                 // 코스매니저와 볼설정 팝업창
                 AutoItX.MouseClick("LEFT", 838, 783);
 
+
                 // 라운드 설정으로 이동
-                LOG.WriteLog(TXTlog, "라운드설정 진입");
+                LOG.Write("라운드설정 진입");
                 Thread.Sleep(3000);
+
 
                 // 기타설정 클릭
                 AutoItX.MouseClick("LEFT", 1594, 487);
                 Thread.Sleep(2000);
 
+
                 // 시작홀 선택                
                 ClickStartHole(firstHole);
 
+
                 // 라운드시작 클릭 
-                LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : 라운드 시작 클릭");
+                LOG.Write("라운드 시작 클릭");
                 AutoItX.MouseClick("LEFT", 1499, 914);
                 Thread.Sleep(2000);
 
+
                 // 서비스 이용 상세내역 팝업창
-                LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name +  " : 서비스 이용 상세내역 팝업창 진입");
+                LOG.Write("서비스 이용 상세내역 팝업창 진입");
                 AutoItX.MouseClick("LEFT", 833, 580);
                 Thread.Sleep(1000);
 
-                // 기본 짧은 광고로딩 녹화 시간 (10초)
-                int recordingTime = 10000;
 
-                // 에티켓 광고 포함 (+10초)
-                recordingTime += 10000;
-
-                // 1홀 로딩 - 1홀 이나 10홀일경우 긴 로딩광고 녹화 필요. (+ 25초)
-                if (firstHole == 1 || firstHole == 10)
-                {
-                    recordingTime += 25000;
-                }
-
+                // 로딩 광고 레코딩 시작
                 string videoFileName = firstHole.ToString() + "H 로딩광고_" + _repeatCount;
-
-                // 비디오 레코딩 시작
-                RecordVideo(recordingTime, videoFileName);
-
-                // 녹화가 끝난 후 여유있게 10초 대기
-                Thread.Sleep(10000);
-
-                // 진입 후 원하는 홀에 들어왔는지 확인                
-                HoleImageCheck(firstHole);
-
-                // 홀 진입 상태                
+                RecordToNextHole(firstHole, videoFileName);
                 Thread.Sleep(3000);
 
 
                 foreach (int hole in holes)
                 {
-                    LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : " + hole.ToString() + "H 진입완료");
+                    LOG.Write(hole.ToString() + "H 진입완료");
+                    AutoItX.WinActivate(DEFAULT_APP_NAME);
 
                     // 나스모 광고 촬영
                     if (CHKnasmo.Checked)
@@ -575,6 +597,7 @@ namespace AutoIt_Test_Automation
                         Thread.Sleep(3000);
                     }
 
+
                     // 18홀일 경우 이후의 액션을 스킵하고 바로 종료
                     if (hole != 18)
                     {
@@ -582,33 +605,20 @@ namespace AutoIt_Test_Automation
                         AutoItX.Send("{F5}");
                         Thread.Sleep(2000);
 
+
                         // 홀스킵 팝업창 진입
-                        LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : 홀스킵 팝업창 진입");
+                        LOG.Write("홀스킵 팝업창 진입");
                         AutoItX.Send("{ENTER}");
                         Thread.Sleep(2000);
+
 
                         // 스코어보드 광고 촬영
                         CaptureFullScreen(_resultPath + hole.ToString() + "H 스코어보드 광고_" + _repeatCount);
 
-                        // 다음홀 진입 전 짧은 로딩광고
-                        recordingTime = 10000;
-
-                        // 만약 다음홀이 10홀일 경우 +25초 추가
-                        if (hole + 1 == 10)
-                        {
-                            recordingTime += 25000;
-                        }
-
-                        videoFileName = (hole + 1).ToString() + "H 로딩광고_" + _repeatCount;
 
                         // 비디오 레코딩 시작
-                        RecordVideo(recordingTime, videoFileName);
-
-                        Thread.Sleep(10000);
-
-                        // 진입 후 원하는 홀에 들어왔는지 확인                
-                        HoleImageCheck(hole + 1);
-
+                        videoFileName = (hole + 1).ToString() + "H 로딩광고_" + _repeatCount;
+                        RecordToNextHole(hole + 1, videoFileName);
                         Thread.Sleep(3000);
                     }
                 }
@@ -617,34 +627,35 @@ namespace AutoIt_Test_Automation
                 IngameQuitVision();
 
 
-                // 종료 로딩
-
-
                 // 모드선택으로 돌아올때까지 대기
                 Thread.Sleep(15000);
 
 
-                // 홀/시간 설정 진입
-                LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : 모드선택 홀/시간설정 팝업 진입확인");
-
-                Bitmap holeSetting = CapturePartialScreen(607, 339, 706, 77, _tempPath + "홀시간설정");
-                Bitmap holeSetting2 = new Bitmap(_imagePath + "LobbyHoleSettingPop.png");
-                if (CompareImages(holeSetting, holeSetting2) < 98)
+                // 비번 사용 시 비밀번호 입력
+                if (CHKusePassword.Checked)
                 {
-                    throw new Exception("홀/시간설정 팝업 진입 실패");
-                }
+                    // 홀/시간 설정 진입
+                    LOG.Write("모드선택 홀/시간설정 팝업 진입확인");
 
-                AutoItX.MouseClick("LEFT", 1016, 440);
-                Thread.Sleep(3000);
-                AutoItX.Send(_password);
-                Thread.Sleep(3000);
-                AutoItX.Send("{ENTER}");
-                Thread.Sleep(3000);
+                    Bitmap holeSetting = CapturePartialScreen(607, 339, 706, 77, _tempPath + "홀시간설정");
+                    Bitmap holeSetting2 = new Bitmap(_imagePath + "LobbyHoleSettingPop.png");
+                    if (CompareImages(holeSetting, holeSetting2) < 98)
+                    {
+                        throw new Exception("홀/시간설정 팝업 진입 실패");
+                    }
+
+                    AutoItX.MouseClick("LEFT", 1016, 440);
+                    Thread.Sleep(3000);
+                    AutoItX.Send(_password);
+                    Thread.Sleep(3000);
+                    AutoItX.Send("{ENTER}");
+                    Thread.Sleep(3000);
+                }
             }
 
-            catch(Exception error)
+            catch (Exception error)
             {
-                LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : " + error.Message);
+                LOG.Write(error.Message);
                 AutoItX.WinActivate(Application.ProductName);
                 MessageBox.Show(error.Message);
 
@@ -665,7 +676,7 @@ namespace AutoIt_Test_Automation
 
 
                 // 모드선택 광고팝업 유무 확인
-                LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : 모드선택 광고팝업 유무 확인");
+                LOG.Write("모드선택 광고팝업 유무 확인");
 
                 Bitmap title = CapturePartialScreen(423, 137, 223, 37, _tempPath + "골프존추천프로모션");
                 Bitmap title2 = new Bitmap(_imagePath + "ModeSelectPromotionPop.png");
@@ -689,7 +700,7 @@ namespace AutoIt_Test_Automation
 
 
                 // CC 선택 - 넉넉히 대기
-                LOG.WriteLog(TXTlog, "CC선택 진입");
+                LOG.Write("CC선택 진입");
                 Thread.Sleep(5000);
 
 
@@ -703,7 +714,7 @@ namespace AutoIt_Test_Automation
 
 
                 // CC 입력
-                InputVirtualKeyBoard(ccName);                
+                InputVirtualKeyBoard(ccName);
 
 
                 // CC 검색시간 대기
@@ -720,9 +731,9 @@ namespace AutoIt_Test_Automation
 
 
                 // 라운드 설정으로 이동
-                LOG.WriteLog(TXTlog, "라운드설정 진입");
-                
-                
+                LOG.Write("라운드설정 진입");
+
+
                 // 팝업창으로 인한 여유
                 Thread.Sleep(4000);
 
@@ -737,50 +748,27 @@ namespace AutoIt_Test_Automation
 
 
                 // 라운드시작 클릭 
-                LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : 라운드 시작 클릭");
+                LOG.Write("라운드 시작 클릭");
                 AutoItX.MouseClick("LEFT", 1807, 432);
                 Thread.Sleep(2000);
-                
-
-                // 기본 짧은 광고로딩 녹화 시간 (10초)
-                int recordingTime = 10000;
 
 
-                // 에티켓 광고 포함 (+10초)
-                recordingTime += 10000;
-
-
-                // 1홀 로딩 - 1홀 이나 10홀일경우 긴 로딩광고 녹화 필요. (+ 25초)
-                if (firstHole == 1 || firstHole == 10)
-                {
-                    recordingTime += 25000;
-                }
-
+                // 광고 레코딩 시작
                 string videoFileName = firstHole.ToString() + "H 로딩광고_" + _repeatCount;
-
-
-                // 비디오 레코딩 시작
-                RecordVideo(recordingTime, videoFileName);
-
-
-                // 녹화가 끝난 후 여유있게 10초 대기
-                Thread.Sleep(10000);
-
-
-                // 터치스크린 리프레시 (안하면 터치가 헛돌음)
-                AutoItX.WinActivate(DEFAULT_APP_NAME);
-
-
-                // 진입 후 원하는 홀에 들어왔는지 확인                
-                HoleImageCheck(firstHole);
-
+                RecordToNextHole(firstHole, videoFileName);
+                
 
                 // 홀 진입 상태                
                 Thread.Sleep(3000);
 
                 foreach (int hole in holes)
                 {
-                    LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : " + hole.ToString() + "H 진입완료");
+                    LOG.Write(hole.ToString() + "H 진입완료");
+
+
+                    // 터치스크린 리프레시 (안하면 터치가 헛돌음)
+                    AutoItX.WinActivate(DEFAULT_APP_NAME);
+
 
                     // 나스모 광고 촬영
                     if (CHKnasmo.Checked)
@@ -812,35 +800,18 @@ namespace AutoIt_Test_Automation
 
 
                         // 홀스킵 팝업창 진입
-                        LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : 홀스킵 팝업창 진입");
+                        LOG.Write("홀스킵 팝업창 진입");
                         AutoItX.MouseClick("LEFT", 840, 690);
                         Thread.Sleep(2000);
 
 
                         // 스코어보드 광고 촬영
                         CaptureFullScreen(_resultPath + hole.ToString() + "H 스코어보드 광고_" + _repeatCount);
+                        
 
-
-                        // 다음홀 진입 전 짧은 로딩광고
-                        recordingTime = 10000;
-
-
-                        // 만약 다음홀이 10홀일 경우 +25초 추가
-                        if (hole + 1 == 10)
-                        {
-                            recordingTime += 25000;
-                        }
-
+                        // 홀간 광고 레코딩 시작
                         videoFileName = (hole + 1).ToString() + "H 로딩광고_" + _repeatCount;
-
-
-                        // 비디오 레코딩 시작
-                        RecordVideo(recordingTime, videoFileName);
-                        Thread.Sleep(10000);
-
-
-                        // 진입 후 원하는 홀에 들어왔는지 확인                
-                        HoleImageCheck(hole + 1);
+                        RecordToNextHole(hole + 1, videoFileName);
                         Thread.Sleep(3000);
                     }
                 }
@@ -853,15 +824,20 @@ namespace AutoIt_Test_Automation
                 Thread.Sleep(15000);
 
 
-                // 홀/시간 설정 진입
-                LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : 모드선택 홀/시간설정 팝업 진입확인");
+                // 비밀번호 사용 시 비번입력
+                if (CHKusePassword.Checked)
+                {
+                    // 홀/시간 설정 진입
+                    LOG.Write("모드선택 홀/시간설정 팝업 진입확인");
 
-                // 비번 화상키보드 확인 및 입력
-                CheckVKPasswordAndInput();
+                    // 비번 화상키보드 확인 및 입력
+                    CheckVKPasswordAndInput();
 
-                // 홀/시간설정 팝업 닫음
-                AutoItX.MouseClick("LEFT", 837, 689);
+                    // 홀/시간설정 팝업 닫음
+                    AutoItX.MouseClick("LEFT", 837, 689);
+                }
 
+                LOG.Write("모드선택 진입");
 
                 // 대회 정보 수신시간 확보
                 Thread.Sleep(5000);
@@ -869,7 +845,7 @@ namespace AutoIt_Test_Automation
 
             catch (Exception error)
             {
-                LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : " + error.Message);
+                LOG.Write(error.Message);
                 AutoItX.WinActivate(Application.ProductName);
                 MessageBox.Show(error.Message);
 
@@ -885,14 +861,15 @@ namespace AutoIt_Test_Automation
         {
             // 모드선택 진입 확인            
             Bitmap modeSelect = CapturePartialScreen(324, 396, 107, 33, _tempPath + "모드선택확인");
-            LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : 모드선택 진입 확인");
+            LOG.Write("모드선택 진입 확인");
+
 
             // 모드선택 -> 모드선랙으로 읽음 *TS 엔진 한계
             if (ImageToString(modeSelect).Trim() != "모드선랙")
             {
-                LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + "모드선택 진입 실패. 매크로 종료");
+                LOG.Write("모드선택 진입 실패. 매크로 종료");
                 throw new Exception("모드선택 진입 실패");
-            }            
+            }
         }
 
 
@@ -902,7 +879,8 @@ namespace AutoIt_Test_Automation
         {
             try
             {
-                LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : 게임종료 로직 수행");
+                LOG.Write("게임종료 로직 수행");
+
 
                 // 클릭 삑사리 대비용
                 AutoItX.WinActivate(DEFAULT_APP_NAME);
@@ -913,17 +891,22 @@ namespace AutoIt_Test_Automation
                 Thread.Sleep(3000);
 
 
-                // 관리자 비번 진입
-                LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : 게임종료 관리자비번 진입");
-                AutoItX.Send(_password);
-                Thread.Sleep(3000);
-                AutoItX.Send("{ENTER}");
-                Thread.Sleep(3000);
-
+                // 비번 사용 시 비밀번호 입력
+                if (CHKusePassword.Checked)
+                {
+                    // 관리자 비번 진입
+                    LOG.Write("게임종료 관리자비번 진입");
+                    AutoItX.Send(_password);
+                    Thread.Sleep(3000);
+                    AutoItX.Send("{ENTER}");
+                    Thread.Sleep(3000);
+                }
+                
 
                 // 유지종료 (한번하면 잘 안됨)
                 int tolerance = 100;
                 int timeOut = 0;
+
 
                 // 종료팝업이 없어질때까지 무한 반복
                 while (tolerance >= 98)
@@ -934,14 +917,14 @@ namespace AutoIt_Test_Automation
                     timeOut++;
 
                     AutoItX.MouseClick("LEFT", 961, 636);
-                    LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : 유지종료 클릭 = " + timeOut.ToString());
+                    LOG.Write("유지종료 클릭 = " + timeOut.ToString());
 
                     Thread.Sleep(1000);
                 }
             }
             catch (Exception error)
             {
-                LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : " + error.Message);
+                LOG.Write(error.Message);
                 AutoItX.WinActivate(Application.ProductName);
                 MessageBox.Show(error.Message);
 
@@ -956,28 +939,33 @@ namespace AutoIt_Test_Automation
         {
             try
             {
-                LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : 게임종료 로직 수행");
+                LOG.Write("게임종료 로직 수행");
+
 
                 // 이게 없으면 마우스 동작 및 화상키보드가 먹지 않음
                 AutoItX.WinActivate(DEFAULT_APP_NAME);
 
 
                 // 게임종료
-                AutoItX.MouseClick("LEFT", 1850, 80);                
+                AutoItX.MouseClick("LEFT", 1850, 80);
                 Thread.Sleep(3000);
 
 
-                // 관리자 비번 진입
-                LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : 게임종료 관리자비번 진입");
+                // 비밀번호 사용 시 비번 입력
+                if (CHKusePassword.Checked)
+                {
+                    // 관리자 비번 진입
+                    LOG.Write("게임종료 관리자비번 진입");
 
 
-                // 비번 화상키보드 확인 & 입력
-                CheckVKPasswordAndInput();
+                    // 비번 화상키보드 확인 & 입력
+                    CheckVKPasswordAndInput();
 
 
-                // 비번 팝업창 확인 버튼 클릭
-                AutoItX.MouseClick("LEFT", 840, 690);
-                Thread.Sleep(3000);
+                    // 비번 팝업창 확인 버튼 클릭
+                    AutoItX.MouseClick("LEFT", 840, 690);
+                    Thread.Sleep(3000);
+                }
 
 
                 // 유지종료 (한번하면 잘 안됨)
@@ -993,14 +981,14 @@ namespace AutoIt_Test_Automation
                     timeOut++;
 
                     AutoItX.MouseClick("LEFT", 960, 640);
-                    LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : 유지종료 클릭 = " + timeOut.ToString());
+                    LOG.Write("유지종료 클릭 = " + timeOut.ToString());
 
                     Thread.Sleep(1000);
                 }
             }
             catch (Exception error)
             {
-                LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : " + error.Message);
+                LOG.Write(error.Message);
                 AutoItX.WinActivate(Application.ProductName);
                 MessageBox.Show(error.Message);
 
@@ -1013,8 +1001,8 @@ namespace AutoIt_Test_Automation
 
         // 투비전용 비번 화상키보드 검사
         private void CheckVKPasswordAndInput()
-        {            
-            LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : 화상키보드 비밀번호 입력 진입");
+        {
+            LOG.Write("화상키보드 비밀번호 입력 진입");
 
             // 비번 화상키보드 확인
             Bitmap vkPass = CapturePartialScreen(375, 494, 111, 74, _tempPath + "화상키보드비번");
@@ -1033,11 +1021,11 @@ namespace AutoIt_Test_Automation
 
 
         // 시작홀을 받아서 라운드설정-홀선택에서 마우스 좌표를 찍게 해줌
-        private void ClickStartHole (int startHole)
+        private void ClickStartHole(int startHole)
         {
-            LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : 시작홀 = " + startHole.ToString());
-                        
-            
+            LOG.Write("시작홀 = " + startHole.ToString());
+
+
             // 칼럼번호 1홀 = 1
             int column = startHole;
             int clickX = 0;
@@ -1052,7 +1040,7 @@ namespace AutoIt_Test_Automation
 
                 case "VISION":
                 default:
-                    
+
                     clickX = 950;
                     clickY = 600;
                     break;
@@ -1062,7 +1050,7 @@ namespace AutoIt_Test_Automation
                     clickY = 750;
                     break;
             }
-            
+
 
             // 스타트 홀이 아랫줄일 경우 Y좌표 이동
             if (startHole > 9)
@@ -1081,7 +1069,7 @@ namespace AutoIt_Test_Automation
                         clickY = 815;
                         break;
                 }
-                
+
                 column -= 9;
             }
 
@@ -1092,7 +1080,7 @@ namespace AutoIt_Test_Automation
             }
 
             // 좌표 클릭
-            AutoItX.MouseClick("LEFT", clickX, clickY);            
+            AutoItX.MouseClick("LEFT", clickX, clickY);
             Thread.Sleep(2000);
         }
 
@@ -1106,7 +1094,7 @@ namespace AutoIt_Test_Automation
             int y = 18;
             int width = 47;
             int height = 53;
-            
+
             switch (GS_TYPE)
             {
                 case "REAL":
@@ -1118,31 +1106,31 @@ namespace AutoIt_Test_Automation
 
                 case "TWOVISION":
                     // 주스크린을 찍으려면 x 좌표 수정 필요
-                    x -= 1920; 
+                    x -= 1920;
                     break;
             }
 
 
             Bitmap img = CapturePartialScreen(x, y, width, height, _tempPath + "홀번호");
-            List<string> fileNames = new List<string> ();
+            List<string> fileNames = new List<string>();
             int holeNo = 0;
 
 
             // 비전의 경우 VisionHoleImg 폴더 사용 ★★★ 다른 GS에서는 다른 폴더를 이용해야 함
             DirectoryInfo di = new DirectoryInfo(_imagePath);
-            
+
             foreach (FileInfo file in di.GetFiles())
             {
                 // 홀 번호 대상 이미지로만 검색
                 if (!file.Name.Contains("HoleNo_"))
                 {
                     continue;
-                }                    
-                
+                }
+
                 Bitmap holeImg = new Bitmap(file.FullName);
 
                 // 이미지 정합성이 98% 이상일경우 해당 홀로 판정
-                LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod() + " : 홀번호.png" + " vs " + file.Name);
+                LOG.Write("홀번호.png" + " vs " + file.Name);
                 if (CompareImages(img, holeImg) >= 98)
                 {
                     // 홀이미지 파일명에서 확장자 앞의 두글자만 가져옴 
@@ -1157,7 +1145,7 @@ namespace AutoIt_Test_Automation
 
                     return holeNo;
                 }
-                
+
             }
 
             return holeNo;
@@ -1171,47 +1159,50 @@ namespace AutoIt_Test_Automation
             int currentHole = GetHoleNumber();
             int overTime = 0;
 
-            // 홀 이미지가 매칭될때까지 1초 단위로 확인
+
+            // 홀 이미지가 매칭될때까지 0.5초 단위로 확인
             while (hole != currentHole)
             {
-                LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod() + " : 홀 이미지 매칭 중 : currentHole = " + currentHole.ToString());
+                LOG.Write("홀 이미지 매칭 중 : currentHole = " + currentHole.ToString());
 
-                Thread.Sleep(1000);
+                Thread.Sleep(500);
                 overTime += 1;
                 currentHole = GetHoleNumber();
+
 
                 // 만약 120초간 대기에도 매칭이 되지 않으면 강제 종료
                 if (overTime > 120)
                 {
-                    LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod() + " : 매크로 종료 : 홀 이미지 매칭 대기 초과");
+                    LOG.Write("매크로 종료 : 홀 이미지 매칭 대기 초과");
                     throw new Exception("홀 이미지 매칭 대기 초과");
                 }
             }
 
             return;
         }
-        
+
+
 
 
         // 범용 이미지 체크 로직 (체크에 실패할 경우 어플리케이션 강제 종료
         private void CommonImageCheck(int x, int y, int width, int height, string filePath, int tolerance)
         {
-            Bitmap screenShot = CapturePartialScreen(x, y, width, height, _tempPath + "imgChk1");            
+            Bitmap screenShot = CapturePartialScreen(x, y, width, height, _tempPath + "imgChk1");
             Bitmap img = new Bitmap(filePath);
 
-            LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : imgChk1 vs " + filePath + " , tolerance = " + tolerance.ToString());
+            LOG.Write("imgChk1 vs " + filePath + " , tolerance = " + tolerance.ToString());
 
             // 이미지가 톨레랑스보다 낮을 경우 어플 종료
             if (CompareImages(screenShot, img) < tolerance)
             {
-                LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : 이미지 체크 실패");
+                LOG.Write("이미지 체크 실패");
                 Application.ExitThread();
                 Environment.Exit(0);
             }
         }
 
-        
-        
+
+
         // 한글키를 눌러주는 키보드 이벤트
         private void PressHangulKey()
         {
@@ -1232,10 +1223,10 @@ namespace AutoIt_Test_Automation
             foreach (char ch in text)
             {
                 string sendText = "";
-                
+
                 switch (CheckString(ch))
                 {
-                    case "K": 
+                    case "K":
                         // 이전에 입력된 글자가 한글이 아니면 키 한영전환 
                         if (!isBeforeCharKor)
                         {
@@ -1244,7 +1235,7 @@ namespace AutoIt_Test_Automation
                         }
 
                         sendText = ch.ToString();
-                        
+
                         break;
 
                     case "E":
@@ -1256,21 +1247,22 @@ namespace AutoIt_Test_Automation
                         }
 
                         sendText = ch.ToString();
-                        
+
                         break;
 
                     case "S":
                         sendText = "{SPACE}";
                         break;
 
-                        // 숫자나 특문은 처리 필요없음
+                    // 숫자나 특문은 처리 필요없음
                     default:
                         sendText = ch.ToString();
                         break;
                 }
 
-                LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : 키보드 입력 신호 전달 = " + sendText);
+                LOG.Write("키보드 입력 신호 전달 = " + sendText);
                 AutoItX.Send(sendText);
+
 
                 // 정상적인 입력을 위해 유휴시간을 둠
                 Thread.Sleep(200);
@@ -1295,7 +1287,7 @@ namespace AutoIt_Test_Automation
             }
 
             // 숫자
-            else if (0x30 <= ch && ch <= 0x39)  
+            else if (0x30 <= ch && ch <= 0x39)
             {
                 return "N";
             }
@@ -1308,7 +1300,7 @@ namespace AutoIt_Test_Automation
 
             return "D";
         }
-        
+
 
 
         // 한글의 초중종성 분해 -> 투비전 화상키보드 인식용
@@ -1317,16 +1309,17 @@ namespace AutoIt_Test_Automation
             // 디스플레이 포커스 유지
             AutoItX.WinActivate(DEFAULT_APP_NAME);
 
-            LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : 문자열 = " + text);
+
+            LOG.Write("문자열 = " + text);
 
             foreach (char ch in text)
             {
-                LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : 문자 = " + ch.ToString());
+                LOG.Write("문자 = " + ch.ToString());
 
                 // 한글이 아니면 분해를 하지 않음
                 if (CheckString(ch) != "K")
                 {
-                    LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : 자소 분해를 하지 않음");
+                    LOG.Write("자소 분해를 하지 않음");
 
                     // 영어일 경우 한영키를 전환
                     if (CheckString(ch) == "E")
@@ -1368,14 +1361,14 @@ namespace AutoIt_Test_Automation
                     for (int i = 0; i < jaso.Length; i++)
                     {
                         TouchVirtualKeyBoard(jaso[i]);
-                        LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : 자소 = " + jaso[i].ToString());
+                        LOG.Write("자소 = " + jaso[i].ToString());
                     }
                 }
             }
 
             // 마지막 입력에 ENTER를 클릭해줌 (send{ENTER} 안먹힘)
             Thread.Sleep(1000);
-            LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : 마지막 [ENTER]키 입력");
+            LOG.Write("마지막 [ENTER]키 클릭");
             AutoItX.MouseClick("LEFT", 1460, 820);
         }
 
@@ -1384,7 +1377,7 @@ namespace AutoIt_Test_Automation
         // 자소를 받아 터치스크린을 클릭
         private void TouchVirtualKeyBoard(char ch)
         {
-            LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : 입력받은 문자 ch = " + ch.ToString());
+            LOG.Write("입력받은 문자 ch = " + ch.ToString());
 
             // 클릭 x, y 좌표 초기화
             int x = 0;
@@ -1396,7 +1389,7 @@ namespace AutoIt_Test_Automation
             // 화상키보드 좌표와 연동해 클릭
             switch (ch)
             {
-                case 'ㄱ':                    
+                case 'ㄱ':
                 case 'r':
                     x = 774;
                     y = 692;
@@ -1444,7 +1437,7 @@ namespace AutoIt_Test_Automation
                     y = 689;
                     break;
 
-                case 'ㅃ':                
+                case 'ㅃ':
                     isNeedShift = true;
                     x = 545;
                     y = 689;
@@ -1528,7 +1521,7 @@ namespace AutoIt_Test_Automation
                     y = 698;
                     break;
 
-                case 'ㅒ':                
+                case 'ㅒ':
                     isNeedShift = true;
                     x = 1161;
                     y = 687;
@@ -1552,7 +1545,7 @@ namespace AutoIt_Test_Automation
                     y = 690;
                     break;
 
-                case 'ㅖ':                
+                case 'ㅖ':
                     isNeedShift = true;
                     x = 1260;
                     y = 681;
@@ -1741,7 +1734,7 @@ namespace AutoIt_Test_Automation
             }
 
             // 터치스크린 좌표
-            
+
 
             // 쌍자음일 경우 시프트 클릭
             if (isNeedShift)
@@ -1759,12 +1752,12 @@ namespace AutoIt_Test_Automation
             }
             else
             {
-                AutoItX.MouseClick("LEFT", x, y);                
+                AutoItX.MouseClick("LEFT", x, y);
             }
 
             // 공용 대기시간
             Thread.Sleep(200);
-            LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : 터치스크린 클릭 x = " 
+            LOG.Write("터치스크린 클릭 x = "
                 + x.ToString() + ", y = " + y.ToString() + ", SHIFT = " + isNeedShift.ToString());
         }
 
@@ -1778,6 +1771,27 @@ namespace AutoIt_Test_Automation
             foreach (FileInfo fi in di.GetFiles())
             {
                 fi.Delete();
+            }
+        }
+
+
+
+        // 녹화 템프 삭제
+        private void DeleteRecordingTemp()
+        {
+            LOG.Write("레코딩 템프 삭제");
+
+            foreach (string file in _inputImageSequence)
+            {
+                try
+                {
+                    File.Delete(file);
+                }
+                catch (Exception error)
+                {
+                    LOG.Write(error.Message);
+                }
+
             }
         }
 
@@ -1801,12 +1815,13 @@ namespace AutoIt_Test_Automation
 
 
 
+
         #region ---- 캡쳐 메소드들 ----
 
         // 비디오 레코드
         private void RecordVideo(int term, string fileName)
         {
-            LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod() + " : 비디오 레코드 시작 = " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            LOG.Write("비디오 레코드 시작");
             
             DateTime targetTime = DateTime.Now.AddMilliseconds(term);
 
@@ -1821,24 +1836,24 @@ namespace AutoIt_Test_Automation
             double fps = (double)_fileCount / ((double)term / 1000);
             fps = Math.Round(fps);
 
-            LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod() + ": RecordVideo : _fileCount = " + _fileCount.ToString("N0") 
+            LOG.Write("_fileCount = " + _fileCount.ToString("N0") 
                 + " ,term = " + term.ToString("N0") 
                 + "ms ,fps = " + fps.ToString());
 
             if (fps != 0)
             {
-                SaveVideo((int)fps, fileName);
+                EncodingVideo((int)fps, fileName);
             }
             else
             {
-                LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod() + " : 계산된 fps가 0이어서 영상을 인코딩할 수 없음.");
+                LOG.Write("계산된 fps가 0이어서 영상을 인코딩할 수 없음.");
             }
                 
         }
 
 
 
-        // 비디오 녹화 <- 타이머 틱으로 처리
+        // 비디오 녹화 <- 동기화 처리
         private void Recording()
         {
             using (Bitmap bitmap = new Bitmap(Screen.PrimaryScreen.Bounds.Width, Screen.PrimaryScreen.Bounds.Height))
@@ -1852,16 +1867,94 @@ namespace AutoIt_Test_Automation
                 bitmap.Save(fileName, System.Drawing.Imaging.ImageFormat.Png);
                 _inputImageSequence.Add(fileName);
                 _fileCount++;
+                
 
                 bitmap.Dispose();
             }
         }
-        
+
+
+
+        // 다음홀까지 비동기 레코딩 실행
+        private void RecordToNextHole(int hole, string fileName)
+        {
+            _recordingStartTime = DateTime.Now;
+
+
+            // 화면녹화를 비동기로 진행
+            LOG.Write("ThreadRecording 실행 : hole = " + hole.ToString() + ", fileName = " + fileName);
+            _tRecording = new Thread(ThreadRecording);
+            _tRecording.Start();
+
+
+            int currentHole = GetHoleNumber();
+            int chkCount = 0;
+
+
+            // 홀 이미지가 매칭될때까지 0.5초 단위로 확인
+            while (hole != currentHole)
+            {
+                LOG.Write("홀 이미지 매칭 중 : currentHole = " + currentHole.ToString());
+
+                Thread.Sleep(500);
+                chkCount += 1;
+                currentHole = GetHoleNumber();
+
+
+                // 만약 120회 수행에도 매칭이 되지 않으면 강제 종료
+                if (chkCount > 120)
+                {
+                    LOG.Write("매크로 종료 : 홀 이미지 매칭 대기 초과");
+
+                    _tRecording.Abort();
+                    _tRecording.Join();
+
+                    throw new Exception("홀 이미지 매칭 대기 초과");
+                }
+            }
+
+            // 화면녹화 종료
+            _tRecording.Abort();
+            _tRecording.Join();
+            LOG.Write("ThreadRecording 종료");
+
+
+            // 비동기 인코딩 시작 --> 끝남을 기다리지 않음
+            AsyncEncodingVideo(fileName);
+
+            return;
+        }
+
+
+
+        // 비디오 녹화 <- 비동기 스레딩 방식
+        private void ThreadRecording()
+        {
+            while (true)
+            {
+                using (Bitmap bitmap = new Bitmap(Screen.PrimaryScreen.Bounds.Width, Screen.PrimaryScreen.Bounds.Height))
+                {
+                    using (Graphics g = Graphics.FromImage(bitmap))
+                    {
+                        g.CopyFromScreen(_left, _top, 0, 0, bitmap.Size);
+                    }
+
+                    string fileName = _tempPath + "videoTemp_" + _fileCount + ".png";
+                    bitmap.Save(fileName, System.Drawing.Imaging.ImageFormat.Png);
+                    _inputImageSequence.Add(fileName);
+                    _fileCount++;
+
+
+                    bitmap.Dispose();
+                }
+            }
+        }
+
 
 
         // 비디오 파일 저장
-        private void SaveVideo(int fps, string fileName)
-        {
+        private void EncodingVideo(int fps, string fileName)
+        {            
             try
             {
                 using (VideoFileWriter vfw = new VideoFileWriter())
@@ -1873,8 +1966,8 @@ namespace AutoIt_Test_Automation
                         VideoCodec.MPEG4
                         );
                     
-                    LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod() + " : 비디오 인코딩 시작 : " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
-                    LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod() + " : 파일 카운트 : " + _fileCount.ToString("N0"));
+                    LOG.Write("비디오 인코딩 시작");
+                    LOG.Write("파일 카운트 : " + _fileCount.ToString("N0"));
                     
                     // 이미지 시퀀스 비디오 인코딩
                     foreach (string imageLoc in _inputImageSequence)
@@ -1884,25 +1977,58 @@ namespace AutoIt_Test_Automation
                         imageFrame.Dispose();
                     }
 
-                    LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod() + " : 비디오 인코딩 완료 : " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+                    LOG.Write("비디오 인코딩 완료");
+
+
+                    // 레코딩 템프 삭제
+                    DeleteRecordingTemp();
+
 
                     // 파일카운트, 저장변수 초기화
                     _fileCount = 1;
                     _inputImageSequence.Clear();
 
-                    // 템프폴더 삭제
-                    DeleteTempFiles();
 
                     vfw.Close();
                 }
 
-                LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod() + " : 비디오파일 저장 완료 : " + _resultPath + fileName + ".mp4");
+                LOG.Write("비디오파일 저장 완료 : " + _resultPath + fileName + ".mp4");
             }
             catch (Exception e)
             {
-                LOG.WriteLog(TXTlog, e.Message);
-            }
+                LOG.Write(e.Message);
+            }            
+        }
+
+
+
+        // 비동기 스레딩 방식의 비디오 저장 전처리
+        private void AsyncEncodingVideo(string fileName)
+        {
+            // 현재까지 러닝타임 계산
+            TimeSpan recTime = DateTime.Now - _recordingStartTime;
+            double term = recTime.TotalMilliseconds;
             
+
+            // 생성된 이미지 파일 수로 영상의 fps를 계산
+            double fps = (double)_fileCount / (term / 1000);
+            fps = Math.Round(fps);
+
+            
+            LOG.Write("_fileCount = " + _fileCount.ToString("N0")
+                + " ,term = " + term.ToString("N0")
+                + "ms ,fps = " + fps.ToString());
+            
+
+            // fps가 0이 아닐때만 인코딩 작업
+            if (fps != 0)
+            {                
+                EncodingVideo((int)fps, fileName);                
+            }
+            else
+            {
+                LOG.Write("계산된 fps가 0이어서 영상을 인코딩할 수 없음.");
+            }
         }
 
 
@@ -1910,7 +2036,7 @@ namespace AutoIt_Test_Automation
         // 전체 스크린 캡쳐
         private void CaptureFullScreen(string fileName)
         {
-            LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : 스크린 샷 캡쳐 시도 (" + fileName + ") _resX : " + _resX.ToString());
+            LOG.Write("스크린 샷 캡쳐 시도 (" + fileName + ") _resX : " + _resX.ToString());
             
             try
             {
@@ -1918,11 +2044,11 @@ namespace AutoIt_Test_Automation
                 Graphics gr = Graphics.FromImage(screenshot);
                 gr.CopyFromScreen(_left, _top, 0, 0, screenshot.Size);
                 screenshot.Save(fileName + ".png", System.Drawing.Imaging.ImageFormat.Png);
-                LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : 스크린 샷 캡쳐 성공 (" + fileName + ")");
+                LOG.Write("스크린 샷 캡쳐 성공 (" + fileName + ")");
             }
             catch (Exception error)
             {
-                LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : 스크린 샷 캡쳐 실패 : " + error.Message);
+                LOG.Write("스크린 샷 캡쳐 실패 = " + error.Message);
             }
         }
 
@@ -1931,7 +2057,7 @@ namespace AutoIt_Test_Automation
         // 부분 스크린 캡쳐
         private Bitmap CapturePartialScreen(int x, int y, int width, int height, string fileName)
         {
-            LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : 스크린 샷 캡쳐 시도 (" + fileName + ")");
+            LOG.Write("스크린 샷 캡쳐 시도 (" + fileName + ")");
 
             try
             {
@@ -1939,12 +2065,12 @@ namespace AutoIt_Test_Automation
                 Graphics gr = Graphics.FromImage(screenshot);
                 gr.CopyFromScreen(x, y, 0, 0, screenshot.Size);
                 screenshot.Save(fileName + ".png", System.Drawing.Imaging.ImageFormat.Png);
-                LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : 스크린 샷 캡쳐 성공 (" + fileName + ")");
+                LOG.Write("스크린 샷 캡쳐 성공 (" + fileName + ")");
                 return screenshot;
             }
             catch (Exception error)
             {
-                LOG.WriteLog(TXTlog, MethodBase.GetCurrentMethod().Name + " : 스크린 샷 캡쳐 실패 : " + error.Message);
+                LOG.Write("스크린 샷 캡쳐 실패 = " + error.Message);
             }
 
             return null;
@@ -1968,7 +2094,7 @@ namespace AutoIt_Test_Automation
 
                 // 그레이스케일로 변환
                 Cv2.CvtColor(src, gray, ColorConversionCodes.BGR2GRAY);
-                LOG.WriteLog(TXTlog, "이미지 그레이스케일 변환 완료");
+                LOG.Write("이미지 그레이스케일 변환 완료");
 
                 // 이진화
                 Cv2.Threshold(gray, bin, 0, 255, ThresholdTypes.Otsu);
@@ -1978,12 +2104,12 @@ namespace AutoIt_Test_Automation
                 Cv2.ImWrite(_tempPath + "grayscale.png", gray);
                 Cv2.ImWrite(_tempPath + "bin.png", bin);
 
-                LOG.WriteLog(TXTlog, "이미지 이진화 변환 완료");
+                LOG.Write("이미지 이진화 변환 완료");
                 return BitmapConverter.ToBitmap(bin);
             }
             catch (Exception error)
             {
-                LOG.WriteLog(TXTlog, error.Message);
+                LOG.Write(error.Message);
             }
 
             return null;
@@ -2003,7 +2129,7 @@ namespace AutoIt_Test_Automation
             Cv2.ImWrite(_tempPath + "upscale.png", dst);
 
             upScale = BitmapConverter.ToBitmap(dst);
-            LOG.WriteLog(TXTlog, "이미지 업스케일링 변환 완료");
+            LOG.Write("이미지 업스케일링 변환 완료");
 
             return upScale;
         }
@@ -2022,7 +2148,7 @@ namespace AutoIt_Test_Automation
             Cv2.ImWrite(_tempPath + @"\downScale.png", dst);
 
             downScale = BitmapConverter.ToBitmap(dst);
-            LOG.WriteLog(TXTlog, "이미지 다운스케일링 변환 완료");
+            LOG.Write("이미지 다운스케일링 변환 완료");
 
             return downScale;
         }
@@ -2038,7 +2164,7 @@ namespace AutoIt_Test_Automation
             Cv2.BitwiseNot(src, dst);
             Cv2.ImWrite(_tempPath + "reverse.png", dst);
 
-            LOG.WriteLog(TXTlog, "이미지 역상 변환 완료");
+            LOG.Write("이미지 역상 변환 완료");
 
             return BitmapConverter.ToBitmap(dst);
         }
@@ -2065,12 +2191,12 @@ namespace AutoIt_Test_Automation
                 }
 
                 double result = 100 - (falseCnt / totalPixel * 100);
-                LOG.WriteLog(TXTlog, "::CompareImages : 이미지 비트맵 비교 결과 : " + result.ToString("N2") + "% 일치");
+                LOG.Write("이미지 비트맵 비교 결과 : " + result.ToString("N2") + "% 일치");
 
                 return (int)result;
             }
 
-            LOG.WriteLog(TXTlog, "::CompareImages : 이미지 비트맵 비교 결과 : 이미지 사이즈가 맞지 않음");
+            LOG.Write("이미지 비트맵 비교 결과 : 이미지 사이즈가 맞지 않음");
 
             return -1;
         }
@@ -2086,14 +2212,14 @@ namespace AutoIt_Test_Automation
                 {
                     using (var page = engine.Process(img))
                     {
-                        LOG.WriteLog(TXTlog, "이미지 Tesseract 결과 : " + page.GetText());
+                        LOG.Write("이미지 Tesseract 결과 : " + page.GetText());
                         return page.GetText();
                     }
                 }
             }
             catch (Exception error)
             {
-                LOG.WriteLog(TXTlog, error.Message);
+                LOG.Write(error.Message);
             }
 
             return null;
@@ -2106,87 +2232,56 @@ namespace AutoIt_Test_Automation
         // 테스트용 버튼 1 클릭 이벤트
         private void button1_Click(object sender, EventArgs e)
         {
-            _imagePath = Application.StartupPath + @"\Images\Twovision\";
-
-
-            // 창 활성화            
-            AutoItX.WinActivate("GolfZonClient");
-            Thread.Sleep(1000);
-
-            // 투비전은 터치모니터 스크린이 메인이기 때문에 포커스를 여기로 맞춰야함
-            AutoItX.WinActivate("GolfzonTouchMonitor");
-
-
-            // 좌표 선언 (비전 & 투비전 공용)
-            int x = 75;
-            int y = 18;
-            int width = 47;
-            int height = 53;
-
-            x -= 1920;
-
-            for (int holeNo = 1; holeNo < 19; holeNo++)
-            {
-                CapturePartialScreen(x, y, width, height, _imagePath + "TwovisionHoleNo_" + holeNo.ToString());
-                Thread.Sleep(3000);
-                AutoItX.Send("{F5}");
-                Thread.Sleep(3000);
-                AutoItX.Send("{ENTER}");
-
-                // 로딩시간 1분
-                Thread.Sleep(60000);
-            }
-
-            MessageBox.Show("완료");
+            LOG.Write("test");
         }
 
 
 
         private void button2_Click(object sender, EventArgs e)
         {
-            // 창 활성화            
-            AutoItX.WinActivate("GolfZonClient");
-            Thread.Sleep(1000);
+            _recordingStartTime = DateTime.Now;
 
-            // 투비전은 터치모니터 스크린이 메인이기 때문에 포커스를 여기로 맞춰야함
-            AutoItX.WinActivate("GolfzonTouchMonitor");
-            AutoItX.Sleep(2000);
-
-            AutoItX.Send("{ESC}");
-
-            AutoItX.MouseClick("LEFT", 505, 610);
-            AutoItX.MouseClick("LEFT", 505, 610);
-            AutoItX.MouseClick("LEFT", 505, 610);
-            AutoItX.MouseClick("LEFT", 505, 610);
-            AutoItX.MouseClick("LEFT", 505, 610);
+            // 레코드 스레딩
+            _tRecording = new Thread(ThreadRecording);
+            _tRecording.Start();
         }
         
 
 
         private void button3_Click(object sender, EventArgs e)
         {
-            // 창 활성화            
-            AutoItX.WinActivate("GolfZonClient");
-            Thread.Sleep(1000);
+            _tRecording.Abort();
+            _tRecording.Join();
 
-            // 투비전은 터치모니터 스크린이 메인이기 때문에 포커스를 여기로 맞춰야함
-            AutoItX.WinActivate("GolfzonTouchMonitor");
-            AutoItX.Sleep(2000);
+            TimeSpan recTime = DateTime.Now - _recordingStartTime;
+            double term = recTime.TotalMilliseconds;
 
-            AutoItX.MouseClick("LEFT", 1920 + 505, 610);
-            AutoItX.MouseClick("LEFT", 1920 + 505, 610);
-            AutoItX.MouseClick("LEFT", 1920 + 505, 610);
-            AutoItX.MouseClick("LEFT", 1920 + 505, 610);
-            AutoItX.MouseClick("LEFT", 1920 + 505, 610);
+            // 생성된 이미지 파일 수로 영상의 fps를 계산
+            double fps = (double)_fileCount / (term / 1000);
+            fps = Math.Round(fps);
+
+            LOG.Write("_fileCount = " + _fileCount.ToString("N0")
+                + " ,term = " + term.ToString("N0")
+                + "ms ,fps = " + fps.ToString());
+
+            if (fps != 0)
+            {
+                EncodingVideo((int)fps, "Thread Test");
+            }
+            else
+            {
+                LOG.Write("계산된 fps가 0이어서 영상을 인코딩할 수 없음.");
+            }
+
         }
 
 
 
-        
 
 
 
-        
+
+
     }
 }
 

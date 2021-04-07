@@ -46,6 +46,7 @@
             this.LBLbuildVer = new System.Windows.Forms.Label();
             this.CHKnasmo = new System.Windows.Forms.CheckBox();
             this.LBLholeEx = new System.Windows.Forms.Label();
+            this.CHKusePassword = new System.Windows.Forms.CheckBox();
             this.SuspendLayout();
             // 
             // BTNstart
@@ -231,11 +232,24 @@
             this.LBLholeEx.TabIndex = 15;
             this.LBLholeEx.Text = "(ex. 1, 3, 5-8)";
             // 
+            // CHKusePassword
+            // 
+            this.CHKusePassword.AutoSize = true;
+            this.CHKusePassword.Checked = true;
+            this.CHKusePassword.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.CHKusePassword.Location = new System.Drawing.Point(114, 306);
+            this.CHKusePassword.Name = "CHKusePassword";
+            this.CHKusePassword.Size = new System.Drawing.Size(173, 24);
+            this.CHKusePassword.TabIndex = 16;
+            this.CHKusePassword.Text = "관리자 패스워드 사용";
+            this.CHKusePassword.UseVisualStyleBackColor = true;
+            // 
             // FORMmain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.ClientSize = new System.Drawing.Size(1017, 637);
+            this.Controls.Add(this.CHKusePassword);
             this.Controls.Add(this.LBLholeEx);
             this.Controls.Add(this.CHKnasmo);
             this.Controls.Add(this.LBLrepeat);
@@ -268,7 +282,6 @@
         private System.Windows.Forms.Button BTNstart;
         private System.Windows.Forms.Button button1;
         private System.Windows.Forms.Button button2;
-        private System.Windows.Forms.RichTextBox TXTlog;
         private System.Windows.Forms.TextBox TXTpassword;
         private System.Windows.Forms.Label LBLpassword;
         private System.Windows.Forms.ComboBox CBBgsType;
@@ -283,6 +296,8 @@
         private System.Windows.Forms.Label LBLbuildVer;
         private System.Windows.Forms.CheckBox CHKnasmo;
         private System.Windows.Forms.Label LBLholeEx;
+        public System.Windows.Forms.RichTextBox TXTlog;
+        private System.Windows.Forms.CheckBox CHKusePassword;
     }
 }
 

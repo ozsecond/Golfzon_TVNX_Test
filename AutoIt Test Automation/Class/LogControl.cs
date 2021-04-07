@@ -2,6 +2,8 @@
 using System.Text;
 using System.IO;
 using System.Windows.Forms;
+using System.Reflection;
+using System.Diagnostics;
 
 
 namespace AutoIt_Test_Automation
@@ -16,6 +18,30 @@ namespace AutoIt_Test_Automation
             logFileName = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss") + ".log";
             WriteLogWithoutBox(logFileName + " 로그 파일 이름 생성 완료");
         }
+
+        public void Write(string logText)
+        {
+            // 로그 앞부분 날짜
+            string date = DateTime.Now.ToString("[yyyy-MM-dd HH:mm:ss] ");
+
+
+            // 로그 앞부분에 메소드 네임 기록
+            string methodName = new StackFrame(1, true).GetMethod().Name + " :: ";                
+            string text = date + methodName + logText;
+
+
+            // 메인폼 로그텍스트박스에 기록
+            RichTextBox TXTlog = FORMmain.mainForm.TXTlog;
+
+            TXTlog.Text += text + "\r\n";
+            TXTlog.SelectionStart = TXTlog.Text.Length;
+            TXTlog.ScrollToCaret();
+
+
+            // 파일 쓰기
+            WriteFile(text);
+        }
+
 
         public void WriteLog(object logBox, string logText)  // 텍스트박스와 파일쓰기를 동시에 하는 메소드
         {
@@ -53,7 +79,7 @@ namespace AutoIt_Test_Automation
                 // MethodBase mb = sf.GetMethod();
 
                 string date = DateTime.Now.ToString("[yyyy-MM-dd HH:mm:ss] "); // + "[" + mb.Name + "] ";
-                sw.WriteLine(date + logText);
+                sw.WriteLine(logText);
             }
             catch (Exception error)
             {
