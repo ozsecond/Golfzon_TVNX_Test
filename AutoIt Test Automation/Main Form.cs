@@ -79,7 +79,7 @@ namespace AutoIt_Test_Automation
 
         // 키보드 이벤트 처리 API
         [DllImport("user32.dll")]
-        public static extern void KeyboardEvent(uint vk, uint scan, uint flags, uint extraInfo);
+        public static extern void keybd_event(uint vk, uint scan, uint flags, uint extraInfo);
 
 
 
@@ -1206,8 +1206,8 @@ namespace AutoIt_Test_Automation
         // 한글키를 눌러주는 키보드 이벤트
         private void PressHangulKey()
         {
-            KeyboardEvent((byte)Keys.HanguelMode, 0, 0x00, 0);
-            KeyboardEvent((byte)Keys.HanguelMode, 0, 0x02, 0);
+            keybd_event((byte)Keys.HanguelMode, 0, 0x00, 0);
+            keybd_event((byte)Keys.HanguelMode, 0, 0x02, 0);
         }
 
 
@@ -2232,7 +2232,7 @@ namespace AutoIt_Test_Automation
         // 테스트용 버튼 1 클릭 이벤트
         private void button1_Click(object sender, EventArgs e)
         {
-            LOG.Write("test");
+            PressHangulKey();
         }
 
 
