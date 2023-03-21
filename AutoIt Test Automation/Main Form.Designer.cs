@@ -1,4 +1,4 @@
-﻿namespace AutoIt_Test_Automation
+﻿namespace Golfzon_TVNX_Test
 {
     partial class FORMmain
     {
@@ -47,6 +47,7 @@
             this.CHKnasmo = new System.Windows.Forms.CheckBox();
             this.LBLholeEx = new System.Windows.Forms.Label();
             this.CHKusePassword = new System.Windows.Forms.CheckBox();
+            this.TXTtest3 = new System.Windows.Forms.TextBox();
             this.SuspendLayout();
             // 
             // BTNstart
@@ -244,11 +245,19 @@
             this.CHKusePassword.Text = "관리자 패스워드 사용";
             this.CHKusePassword.UseVisualStyleBackColor = true;
             // 
+            // TXTtest3
+            // 
+            this.TXTtest3.Location = new System.Drawing.Point(670, 231);
+            this.TXTtest3.Name = "TXTtest3";
+            this.TXTtest3.Size = new System.Drawing.Size(314, 27);
+            this.TXTtest3.TabIndex = 17;
+            // 
             // FORMmain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.ClientSize = new System.Drawing.Size(1017, 637);
+            this.Controls.Add(this.TXTtest3);
             this.Controls.Add(this.CHKusePassword);
             this.Controls.Add(this.LBLholeEx);
             this.Controls.Add(this.CHKnasmo);
@@ -271,7 +280,7 @@
             this.Font = new System.Drawing.Font("맑은 고딕", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.Margin = new System.Windows.Forms.Padding(4);
             this.Name = "FORMmain";
-            this.Text = "AutoIt Test Automation";
+            this.Text = "Golfzon TVNX Test";
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -298,6 +307,7 @@
         private System.Windows.Forms.Label LBLholeEx;
         public System.Windows.Forms.RichTextBox TXTlog;
         private System.Windows.Forms.CheckBox CHKusePassword;
+        private System.Windows.Forms.TextBox TXTtest3;
     }
 }
 

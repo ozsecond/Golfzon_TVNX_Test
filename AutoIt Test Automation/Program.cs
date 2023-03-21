@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace AutoIt_Test_Automation
+namespace Golfzon_TVNX_Test
 {
     static class Program
     {

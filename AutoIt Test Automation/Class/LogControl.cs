@@ -6,7 +6,7 @@ using System.Reflection;
 using System.Diagnostics;
 
 
-namespace AutoIt_Test_Automation
+namespace Golfzon_TVNX_Test
 {
     class LogControl
     {
