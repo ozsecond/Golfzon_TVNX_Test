@@ -47,7 +47,10 @@
             this.CHKnasmo = new System.Windows.Forms.CheckBox();
             this.LBLholeEx = new System.Windows.Forms.Label();
             this.CHKusePassword = new System.Windows.Forms.CheckBox();
-            this.TXTtest3 = new System.Windows.Forms.TextBox();
+            this.TXTclientFolderName = new System.Windows.Forms.TextBox();
+            this.label1 = new System.Windows.Forms.Label();
+            this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
             // BTNstart
@@ -65,7 +68,7 @@
             // button1
             // 
             this.button1.Font = new System.Drawing.Font("맑은 고딕", 11.25F);
-            this.button1.Location = new System.Drawing.Point(855, 87);
+            this.button1.Location = new System.Drawing.Point(442, 26);
             this.button1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(129, 30);
@@ -77,7 +80,7 @@
             // button2
             // 
             this.button2.Font = new System.Drawing.Font("맑은 고딕", 11.25F);
-            this.button2.Location = new System.Drawing.Point(855, 123);
+            this.button2.Location = new System.Drawing.Point(442, 62);
             this.button2.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(129, 30);
@@ -158,7 +161,7 @@
             // 
             // button3
             // 
-            this.button3.Location = new System.Drawing.Point(855, 159);
+            this.button3.Location = new System.Drawing.Point(442, 98);
             this.button3.Name = "button3";
             this.button3.Size = new System.Drawing.Size(129, 30);
             this.button3.TabIndex = 9;
@@ -245,19 +248,42 @@
             this.CHKusePassword.Text = "관리자 패스워드 사용";
             this.CHKusePassword.UseVisualStyleBackColor = true;
             // 
-            // TXTtest3
+            // TXTclientFolderName
             // 
-            this.TXTtest3.Location = new System.Drawing.Point(670, 231);
-            this.TXTtest3.Name = "TXTtest3";
-            this.TXTtest3.Size = new System.Drawing.Size(314, 27);
-            this.TXTtest3.TabIndex = 17;
+            this.TXTclientFolderName.Location = new System.Drawing.Point(121, 28);
+            this.TXTclientFolderName.Name = "TXTclientFolderName";
+            this.TXTclientFolderName.Size = new System.Drawing.Size(314, 27);
+            this.TXTclientFolderName.TabIndex = 17;
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(6, 31);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(109, 20);
+            this.label1.TabIndex = 18;
+            this.label1.Text = "클라 폴더 이름";
+            // 
+            // groupBox1
+            // 
+            this.groupBox1.Controls.Add(this.label1);
+            this.groupBox1.Controls.Add(this.TXTclientFolderName);
+            this.groupBox1.Controls.Add(this.button3);
+            this.groupBox1.Controls.Add(this.button2);
+            this.groupBox1.Controls.Add(this.button1);
+            this.groupBox1.Location = new System.Drawing.Point(407, 204);
+            this.groupBox1.Name = "groupBox1";
+            this.groupBox1.Size = new System.Drawing.Size(596, 143);
+            this.groupBox1.TabIndex = 19;
+            this.groupBox1.TabStop = false;
+            this.groupBox1.Text = "NX CC 검증";
             // 
             // FORMmain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.ClientSize = new System.Drawing.Size(1017, 637);
-            this.Controls.Add(this.TXTtest3);
+            this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.CHKusePassword);
             this.Controls.Add(this.LBLholeEx);
             this.Controls.Add(this.CHKnasmo);
@@ -265,7 +291,6 @@
             this.Controls.Add(this.LBLhole);
             this.Controls.Add(this.TXTrepeat);
             this.Controls.Add(this.TXThole);
-            this.Controls.Add(this.button3);
             this.Controls.Add(this.CBBgsType);
             this.Controls.Add(this.LBLccName);
             this.Controls.Add(this.LBLgsType);
@@ -273,14 +298,14 @@
             this.Controls.Add(this.LBLpassword);
             this.Controls.Add(this.TXTccName);
             this.Controls.Add(this.TXTpassword);
-            this.Controls.Add(this.button2);
-            this.Controls.Add(this.button1);
             this.Controls.Add(this.TXTlog);
             this.Controls.Add(this.BTNstart);
             this.Font = new System.Drawing.Font("맑은 고딕", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.Margin = new System.Windows.Forms.Padding(4);
             this.Name = "FORMmain";
             this.Text = "Golfzon TVNX Test";
+            this.groupBox1.ResumeLayout(false);
+            this.groupBox1.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -307,7 +332,9 @@
         private System.Windows.Forms.Label LBLholeEx;
         public System.Windows.Forms.RichTextBox TXTlog;
         private System.Windows.Forms.CheckBox CHKusePassword;
-        private System.Windows.Forms.TextBox TXTtest3;
+        private System.Windows.Forms.TextBox TXTclientFolderName;
+        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.GroupBox groupBox1;
     }
 }
 

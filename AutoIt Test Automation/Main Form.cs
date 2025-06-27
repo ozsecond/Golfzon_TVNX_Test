@@ -21,6 +21,9 @@ using OpenCvSharp;
 using OpenCvSharp.Extensions;
 using System.Text.RegularExpressions;
 using HtmlAgilityPack;
+using OpenCvSharp.Internal;
+using DocumentFormat.OpenXml.Bibliography;
+using Golfzon_TVNX_Test.Class;
 
 // TODO 
 
@@ -60,7 +63,7 @@ namespace Golfzon_TVNX_Test
         public static int _resY = 1080;
         public static int _left = -1920;
         public static int _top = 0;
-
+        
 
         // GS 패스워드
         private string _password;
@@ -86,6 +89,13 @@ namespace Golfzon_TVNX_Test
         const uint RBUTTONDOWN = 0x0008;    // 오른쪽 마우스 버튼 눌림
         const uint RBUTTONUP = 0x00010;      // 오른쪽 마우스 버튼 떼어짐
 
+
+        // 화면 드로잉 처리 API
+        [DllImport("User32.dll")]
+        public static extern IntPtr GetDC(IntPtr hwnd);
+
+        [DllImport("User32.dll")]
+        public static extern void ReleaseDC(IntPtr hwnd, IntPtr dc);
 
 
         // 한글 초중종성 유니코드 분석용 
@@ -118,6 +128,7 @@ namespace Golfzon_TVNX_Test
             InitializeComponent();
             mainForm = this;
             string version = "ver." + Assembly.GetExecutingAssembly().GetName().Version;
+            
 
             // 빌드버전 표시
             LBLbuildVer.Text = version;
@@ -134,150 +145,10 @@ namespace Golfzon_TVNX_Test
 
             // 결과 데이터테이블 초기화
             InitResultTable();
-        }
 
 
-        // 결과 데이터테이블 초기화
-        private void InitResultTable()
-        {
-            _DTresult = new DataTable();
-            _DTresult.Columns.Add(new DataColumn("CCID", typeof(string)));
-            _DTresult.Columns.Add(new DataColumn("CCName", typeof(string)));
-            _DTresult.Columns.Add(new DataColumn("CourseName", typeof(string)));
-            _DTresult.Columns.Add(new DataColumn("Hole", typeof(int)));
-            _DTresult.Columns.Add(new DataColumn("Handicap", typeof(int)));
-            _DTresult.Columns.Add(new DataColumn("WebPar", typeof(int)));
-            _DTresult.Columns.Add(new DataColumn("CliPar", typeof(int)));
-            _DTresult.Columns.Add(new DataColumn("Tee", typeof(string)));
-            _DTresult.Columns.Add(new DataColumn("WebDistance", typeof(float)));
-            _DTresult.Columns.Add(new DataColumn("CliDistance", typeof(float)));
-            _DTresult.Columns.Add(new DataColumn("Result", typeof(string)));
-
-
-            _DTtempResult = _DTresult.Clone();            
-        }
-
-
-        // 닷컴 CC 데이터 조회 후 결과 테이블 생성
-        private void GetWebData(string courseNo)
-        {
-            // 이전 템프 결과 삭제
-            _DTtempResult.Clear();
-            
-
-            // 코스번호 입력 (나중엔 csv파일 등에서 읽어와야 함)            
-            string url = "http://www.golfzon.com/course/course_detail/R/" + courseNo;
-
-
-            // 웹 크롤러
-            HtmlWeb web = new HtmlWeb();
-            HtmlAgilityPack.HtmlDocument htmlDoc = web.Load(url);
-
-
-            // html 노드에서 정보 추출
-            HtmlNode ccNameInfo = htmlDoc.DocumentNode.SelectSingleNode(".//dd[@class='course_posi']/a");
-            _ccName = ccNameInfo.InnerText;
-            LOG.Write(_ccName);
-
-
-            _courseName = new ArrayList();
-            HtmlNode hallInfo = htmlDoc.DocumentNode.SelectSingleNode(".//div[@class='hall_info']");
-
-
-            // 코스를 2개 이상 가진 CC는 2개에서 자름
-            for (int i = 1; i <= 2; i++)
-            {
-                float[,] tDis = new float[5, 9];
-                int[] par = new int[9];
-
-
-                // 티 이름 배열
-                string[] tee = new string[5];
-                tee[0] = "Back";
-                tee[1] = "Champ";
-                tee[2] = "Front";
-                tee[3] = "Senior";
-                tee[4] = "Lady";
-
-
-                HtmlNode courseNameInfo = hallInfo.SelectSingleNode(".//h5[@class='idx_" + i.ToString() + "']/strong");
-                if (courseNameInfo != null)
-                {
-                    _courseName.Add(courseNameInfo.InnerText);
-                    LOG.Write("코스추가 = " + courseNameInfo.InnerText);
-                }
-
-
-                HtmlNode parInfo = hallInfo.SelectSingleNode(".//table[@class='idx_" + i.ToString() + "']/thead/tr[2]");
-                if (parInfo != null)
-                {
-                    string tempPar = Regex.Replace(parInfo.InnerText, @"\s", "");
-                    for (int h = 0; h < 9; h++)
-                    {
-                        par[h] = int.Parse(tempPar.Substring(3 + h, 1));
-                        LOG.Write("Par Data Added = " + par[h]);
-                    }
-                }
-
-
-                HtmlNode teeInfo = hallInfo.SelectSingleNode(".//table[@class='idx_" + i.ToString() + "']/tbody");
-                if (teeInfo != null)
-                {
-                    // 이너텍스트 공백 제거 후 티별 거리 산출
-                    string tempTee = Regex.Replace(teeInfo.InnerText, @"\s", "");
-
-
-                    string[] backT = GetTeeDistance(tempTee, "BackTee", "ChampTee");
-                    string[] champT = GetTeeDistance(tempTee, "ChampTee", "FrontTee");
-                    string[] frontT = GetTeeDistance(tempTee, "FrontTee", "SeniorTee");
-                    string[] seniorT = GetTeeDistance(tempTee, "SeniorTee", "LadyTee");
-                    string[] ladyT = GetTeeDistance(tempTee, "LadyTee", "MAP");
-
-
-                    for (int x = 0; x < 9; x++)
-                    {
-                        tDis[0, x] = float.Parse(backT[x]);
-                        tDis[1, x] = float.Parse(champT[x]);
-                        tDis[2, x] = float.Parse(frontT[x]);
-                        tDis[3, x] = float.Parse(seniorT[x]);
-                        tDis[4, x] = float.Parse(ladyT[x]);
-                    }
-                }
-
-
-                // 결과 테이블 작성
-                // 홀마다 생성하는 코스이름, 홀, 기준파
-                if (courseNameInfo != null)
-                {
-                    for (int h = 0; h < 9; h++)
-                    {
-                        DataRow DRh = _DTtempResult.NewRow();
-                        DRh["CCID"] = courseNo;
-                        DRh["CCName"] = _ccName;
-                        DRh["CourseName"] = _courseName[i - 1];
-                        DRh["Hole"] = h + 1;
-                        DRh["WebPar"] = par[h];
-                        _DTtempResult.Rows.Add(DRh.ItemArray);
-
-
-                        // 티마다 생성하는 티거리
-                        for (int t = 0; t < 5; t++)
-                        {
-                            DataRow DRt = _DTtempResult.NewRow();
-                            DRt["CCID"] = courseNo;
-                            DRt["CCName"] = _ccName;
-                            DRt["CourseName"] = _courseName[i - 1];
-                            DRt["Hole"] = h + 1;
-                            DRt["Tee"] = tee[t];
-                            DRt["WebDistance"] = tDis[t, h];
-                            _DTtempResult.Rows.Add(DRt.ItemArray);
-                        }
-                    }
-                }
-            }
-            // 데이터테이블이 다 만들어지면 시험용 익스포트
-            // Class.Excel EX = new Class.Excel();
-            // EX.Excel2007Export(_DTresult, _resultPath + "WebData.xlsx");            
+            // NX 클라 이름 박스 초기화
+            TXTclientFolderName.Text = @"c:\Users\Golfzon\Desktop\2023_04_13";
         }
 
 
@@ -2375,8 +2246,18 @@ namespace Golfzon_TVNX_Test
         // 마우스 클릭 윈도우 API 이벤트
         private void MouseLClick(int x, int y)
         {
+            // 마우스 클릭 시 노란색의 원을 그림
+            IntPtr desktopPtr = GetDC(IntPtr.Zero);
+            Graphics g = Graphics.FromHdc(desktopPtr);
+            Color c = Color.FromArgb(100, Color.Yellow);
+            SolidBrush b = new SolidBrush(c);
+            g.FillEllipse(b, x - 50, y - 50, 100, 100);
+            g.Dispose();
+            ReleaseDC(IntPtr.Zero, desktopPtr);            
+
+
             Cursor.Position = new System.Drawing.Point(x, y);
-            mouse_event(LBUTTONDOWN, 0, 0, 0, 0);
+            mouse_event(LBUTTONDOWN, 0, 0, 0, 0);            
             Delay(50);
             mouse_event(LBUTTONUP, 0, 0, 0, 0);
         }
@@ -2394,6 +2275,151 @@ namespace Golfzon_TVNX_Test
                 dateTimeNow = DateTime.Now;
             }
             return;
+        }
+
+
+        // 결과 데이터테이블 초기화
+        private void InitResultTable()
+        {
+            _DTresult = new DataTable();
+            _DTresult.Columns.Add(new DataColumn("CCID", typeof(string)));
+            _DTresult.Columns.Add(new DataColumn("CCName", typeof(string)));
+            _DTresult.Columns.Add(new DataColumn("CourseName", typeof(string)));
+            _DTresult.Columns.Add(new DataColumn("Hole", typeof(int)));
+            _DTresult.Columns.Add(new DataColumn("Handicap", typeof(int)));
+            _DTresult.Columns.Add(new DataColumn("WebPar", typeof(int)));
+            _DTresult.Columns.Add(new DataColumn("CliPar", typeof(int)));
+            _DTresult.Columns.Add(new DataColumn("Tee", typeof(string)));
+            _DTresult.Columns.Add(new DataColumn("WebDistance", typeof(float)));
+            _DTresult.Columns.Add(new DataColumn("CliDistance", typeof(float)));
+            _DTresult.Columns.Add(new DataColumn("LoadingTime", typeof(double)));
+            _DTresult.Columns.Add(new DataColumn("Result", typeof(string)));
+
+
+            _DTtempResult = _DTresult.Clone();
+        }
+
+
+        // 닷컴 CC 데이터 조회 후 결과 테이블 생성
+        private void GetWebData(string courseNo)
+        {
+            // 이전 템프 결과 삭제
+            _DTtempResult.Clear();
+
+
+            // 코스번호 입력 (나중엔 csv파일 등에서 읽어와야 함)            
+            string url = "http://www.golfzon.com/course/course_detail/R/" + courseNo;
+
+
+            // 웹 크롤러
+            HtmlWeb web = new HtmlWeb();
+            HtmlAgilityPack.HtmlDocument htmlDoc = web.Load(url);
+
+
+            // html 노드에서 정보 추출
+            HtmlNode ccNameInfo = htmlDoc.DocumentNode.SelectSingleNode(".//dd[@class='course_posi']/a");
+            _ccName = ccNameInfo.InnerText;
+            LOG.Write(_ccName);
+
+
+            _courseName = new ArrayList();
+            HtmlNode hallInfo = htmlDoc.DocumentNode.SelectSingleNode(".//div[@class='hall_info']");
+
+
+            // 코스를 2개 이상 가진 CC는 2개에서 자름
+            for (int i = 1; i <= 2; i++)
+            {
+                float[,] tDis = new float[5, 9];
+                int[] par = new int[9];
+
+
+                // 티 이름 배열
+                string[] tee = new string[5];
+                tee[0] = "Back";
+                tee[1] = "Champ";
+                tee[2] = "Front";
+                tee[3] = "Senior";
+                tee[4] = "Lady";
+
+
+                HtmlNode courseNameInfo = hallInfo.SelectSingleNode(".//h5[@class='idx_" + i.ToString() + "']/strong");
+                if (courseNameInfo != null)
+                {
+                    _courseName.Add(courseNameInfo.InnerText);
+                    LOG.Write("코스추가 = " + courseNameInfo.InnerText);
+                }
+
+
+                HtmlNode parInfo = hallInfo.SelectSingleNode(".//table[@class='idx_" + i.ToString() + "']/thead/tr[2]");
+                if (parInfo != null)
+                {
+                    string tempPar = Regex.Replace(parInfo.InnerText, @"\s", "");
+                    for (int h = 0; h < 9; h++)
+                    {
+                        par[h] = int.Parse(tempPar.Substring(3 + h, 1));
+                        LOG.Write("Par Data Added = " + par[h]);
+                    }
+                }
+
+
+                HtmlNode teeInfo = hallInfo.SelectSingleNode(".//table[@class='idx_" + i.ToString() + "']/tbody");
+                if (teeInfo != null)
+                {
+                    // 이너텍스트 공백 제거 후 티별 거리 산출
+                    string tempTee = Regex.Replace(teeInfo.InnerText, @"\s", "");
+
+
+                    string[] backT = GetTeeDistance(tempTee, "BackTee", "ChampTee");
+                    string[] champT = GetTeeDistance(tempTee, "ChampTee", "FrontTee");
+                    string[] frontT = GetTeeDistance(tempTee, "FrontTee", "SeniorTee");
+                    string[] seniorT = GetTeeDistance(tempTee, "SeniorTee", "LadyTee");
+                    string[] ladyT = GetTeeDistance(tempTee, "LadyTee", "MAP");
+
+
+                    for (int x = 0; x < 9; x++)
+                    {
+                        tDis[0, x] = float.Parse(backT[x]);
+                        tDis[1, x] = float.Parse(champT[x]);
+                        tDis[2, x] = float.Parse(frontT[x]);
+                        tDis[3, x] = float.Parse(seniorT[x]);
+                        tDis[4, x] = float.Parse(ladyT[x]);
+                    }
+                }
+
+
+                // 결과 테이블 작성
+                // 홀마다 생성하는 코스이름, 홀, 기준파
+                if (courseNameInfo != null)
+                {
+                    for (int h = 0; h < 9; h++)
+                    {
+                        DataRow DRh = _DTtempResult.NewRow();
+                        DRh["CCID"] = courseNo;
+                        DRh["CCName"] = _ccName;
+                        DRh["CourseName"] = _courseName[i - 1];
+                        DRh["Hole"] = h + 1;
+                        DRh["WebPar"] = par[h];
+                        _DTtempResult.Rows.Add(DRh.ItemArray);
+
+
+                        // 티마다 생성하는 티거리
+                        for (int t = 0; t < 5; t++)
+                        {
+                            DataRow DRt = _DTtempResult.NewRow();
+                            DRt["CCID"] = courseNo;
+                            DRt["CCName"] = _ccName;
+                            DRt["CourseName"] = _courseName[i - 1];
+                            DRt["Hole"] = h + 1;
+                            DRt["Tee"] = tee[t];
+                            DRt["WebDistance"] = tDis[t, h];
+                            _DTtempResult.Rows.Add(DRt.ItemArray);
+                        }
+                    }
+                }
+            }
+            // 데이터테이블이 다 만들어지면 시험용 익스포트
+            // Class.Excel EX = new Class.Excel();
+            // EX.Excel2007Export(_DTresult, _resultPath + "WebData.xlsx");            
         }
 
 
@@ -2475,6 +2501,12 @@ namespace Golfzon_TVNX_Test
                         }
 
 
+                        // 이벤트 팝업창 닫음
+                        MouseLClick(966, 999);
+                        LOG.Write("다음 버튼 클릭");
+                        Thread.Sleep(2000);
+
+
                         count++;
                         LOG.Write("모드선택 진입 확인 : count = " + count.ToString());
                         Bitmap modeSelect = CapturePartialScreen(150, 250, 150, 50, _tempPath + "모드선택확인");
@@ -2488,7 +2520,7 @@ namespace Golfzon_TVNX_Test
 
 
                     // 다음버튼 클릭 --> CC 선택 이동
-                    MouseLClick(1770, 1020);
+                    MouseLClick(1770, 1020);                    
                     LOG.Write("다음 버튼 클릭");
                     Thread.Sleep(5000);
 
@@ -2510,11 +2542,8 @@ namespace Golfzon_TVNX_Test
 
                     // CC명 입력
                     LOG.Write("CC명 입력");
-                    AutoItX.Send(ccName);
+                    AutoItX.Send(ccName);                    
                     Thread.Sleep(3000);
-
-
-                    // ★★★★★★★★★★★★★ 보완 필요 (엔터키 안먹을때 있음)
                     LOG.Write("ENTER 클릭");
                     MouseLClick(1560, 834);
                     Thread.Sleep(3000);
@@ -2571,15 +2600,48 @@ namespace Golfzon_TVNX_Test
                                 throw new Exception(h.ToString() + "홀 진입 실패");
                             }
 
+
                             count++;
                             LOG.Write("홀시작 판정 시작 / count = " + count.ToString());
-                            Bitmap hole = CapturePartialScreen(70, 70, 70, 55, _tempPath + "hole" + h.ToString());
-                            if (ImageToString(hole, "eng").Trim() == "Hole")
+                            
+
+                            Bitmap BMPh = CapturePartialScreen(65, 65, 413, 67, _tempPath + "h" + h.ToString());
+                            string holeInfo = ImageToString(BMPh, "eng").Trim();
+                            LOG.Write("홀정보 읽음 = " + holeInfo);
+
+
+                            // 문자열 공백 제거
+                            holeInfo = Regex.Replace(holeInfo, @"\s", "");
+                            LOG.Write("HoleInfo = " + holeInfo);
+                            
+
+                            // 홀정보가 없을 경우 = 로딩이 덜 되었을 경우 패스
+                            if (holeInfo.Length >= 4)
                             {
-                                isHoleStart = true;
-                                LOG.Write("isHoleStart = " + isHoleStart.ToString());
-                                break;
-                            }
+                                if (holeInfo.Substring(0, 4).Trim() == "Hole")
+                                {
+                                    string hn = holeInfo.Substring(4, holeInfo.IndexOf("Par") - 4);
+                                    hn = Regex.Replace(hn, @"\D", "");
+                                    LOG.Write("hn = " + hn);
+                                    int hole = int.Parse(hn);
+
+
+                                    string pa = holeInfo.Substring(holeInfo.IndexOf("Par") + 3, 1);
+                                    int par = int.Parse(pa);
+                                    LOG.Write("pa = " + pa);
+                                    //int hdcp = int.Parse(holeInfo.Substring(holeInfo.IndexOf("HDCP") + 5).Trim());
+                                    LOG.Write("Hole = " + hole.ToString() + " / Par = " + par.ToString());
+
+
+                                    if (hole == h)
+                                    {
+                                        isHoleStart = true;
+                                        LOG.Write("isHoleStart = " + isHoleStart.ToString());
+                                        break;
+                                    }
+                                }                                
+                            }                            
+
 
                             Thread.Sleep(2000);
                         }
@@ -2591,12 +2653,9 @@ namespace Golfzon_TVNX_Test
                             GetParAndHandicapToLog(ccID);
                         }
 
+                        // 로그에서 로딩타임 가져옴
+                        GetHoleLoadingTime(h - 1);
 
-                        // 홀번호 읽고 저장
-                        Bitmap holeNum = CapturePartialScreen(140, 75, 70, 55, _tempPath + "h" + h.ToString());
-                        LOG.Write("홀번호 읽음 = " + ImageToString(ImageUpScale(holeNum), "eng").Trim());
-                        Thread.Sleep(1000);
-                        
 
                         // 로그에서 티 거리 정보 가져옴
                         GetTeeDistanceToLog(ccID, h - 1);
@@ -2630,7 +2689,7 @@ namespace Golfzon_TVNX_Test
                     // 유지 종료 버튼 클릭
                     MouseLClick(962, 723);
                     Thread.Sleep(15000);
-
+                    
 
                     cIndex++;
                 }
@@ -2651,7 +2710,7 @@ namespace Golfzon_TVNX_Test
         // 게임로그 가져오기
         private string[] GetGameLog()
         {
-            string path = @"C:\Users\Golfzon\Desktop\2023_03_09\GolfzonVision2NX\U1Project\Saved\Logs\U1Project.log";
+            string path = TXTclientFolderName.Text + @"\GolfzonVision2NX\U1Project\Saved\Logs\U1Project.log";
             //string path2 = @"C:\Users\ozsec\Downloads\U1Project.log"; <-- 테스트용
 
             var list = new List<string>();
@@ -2699,6 +2758,7 @@ namespace Golfzon_TVNX_Test
                 {
                     string[] temp = gameLog[l].Split(']');
                     string log = temp[2];
+                    
 
 
                     // 파, 핸디캡 정보 검색
@@ -2719,6 +2779,7 @@ namespace Golfzon_TVNX_Test
                                 //_par[index] = int.Parse(parTemp[1].Trim());
                                 //_handi[index] = int.Parse(parTemp[2].Trim());
 
+
                                 int webPar = 0;
                                 int.TryParse(_DTtempResult.Rows[index]["WebPar"].ToString(), out webPar);
                                 int cliPar = int.Parse(parTemp[1].Trim());
@@ -2726,7 +2787,7 @@ namespace Golfzon_TVNX_Test
 
 
                                 _DTtempResult.Rows[index]["CliPar"] = cliPar;
-                                _DTtempResult.Rows[index]["Handicap"] = handi;
+                                _DTtempResult.Rows[index]["Handicap"] = handi;                                
 
 
                                 LOG.Write("index = " + index.ToString()
@@ -2736,7 +2797,7 @@ namespace Golfzon_TVNX_Test
 
 
                                 // P/F 판별
-                                if (webPar == cliPar)
+                                if (webPar == cliPar && handi != 0) 
                                 {
                                     _DTtempResult.Rows[index]["Result"] = "Pass";
                                 }
@@ -2762,19 +2823,59 @@ namespace Golfzon_TVNX_Test
         }
 
 
+        // 게임로그에서 로딩타임을 불러오는 로직
+        private void GetHoleLoadingTime(int hIndex)
+        {
+            string[] gameLog = GetGameLog();            
+            double time = 0;
+
+
+            for (int l = gameLog.Length - 1; l >= 0; l--)
+            {
+                try
+                {
+                    string[] temp = gameLog[l].Split(']');
+                    string log = temp[2];
+
+
+                    // 로딩시간 검색
+                    if (log.Contains("U1: UU1RoundLoadingState::OnLoadingCompleted"))
+                    {
+                        LOG.Write("LoadingTime Search Line = " + l.ToString("N0"));
+                        time = Convert.ToDouble(log.Substring(log.IndexOf("LoadingTime") + 14).Trim());
+                        
+                        
+                        // 홀 로딩시간 기록
+                        int index = hIndex * 6;
+                        _DTtempResult.Rows[index]["LoadingTime"] = time;
+                        LOG.Write("Hole Loading Time = " + time.ToString());
+
+
+                        // 데이터를 찾으면 검색 중단
+                        break;
+                    }
+                }
+                catch(Exception ex)
+                {
+                    LOG.Write(ex.Message);
+                }
+            }
+        }
+
+
         // 게임로그에서 티별 거리를 불러오는 로직 (_distance) -> 홀마다 호출
         private void GetTeeDistanceToLog(string ccID, int hIndex)
         {
             string[] gameLog = GetGameLog();
-            int tIndex = 0;
-            
+            int tIndex = 0;            
+
 
             for (int l = gameLog.Length - 1; l >= 0; l--)
             {                
                 try
                 {
                     string[] temp = gameLog[l].Split(']');
-                    string log = temp[2];
+                    string log = temp[2];                    
 
 
                     // 티 별 길이 정보 검색 (매 홀 시작마다)
@@ -2798,7 +2899,7 @@ namespace Golfzon_TVNX_Test
 
                                 // 홀 정보 데이터가 기록된 행 기준 (0, 7, 13, 19 ...)
                                 int index = hIndex * 6 + 1;
-
+                                
 
                                 // 홀 및 웹파 추출 -> 필요없는 부분
                                 int hole = Convert.ToInt16(_DTtempResult.Rows[index]["Hole"]);
@@ -2865,61 +2966,7 @@ namespace Golfzon_TVNX_Test
         private void WriteTempResult(int cIndex)
         {
             Class.Excel EX = new Class.Excel(); 
-            int hIndex = -1;
-            int tIndex = 0;
             
-            /*
-            // 찾은 데이터 기록 및 정상여부 판별
-            foreach (DataRow dr in _DTtempResult.Rows)
-            {
-                int webPar = 0;
-                int.TryParse(dr["WebPar"].ToString(), out webPar);
-
-
-                // 테이블에 기준파 값이 있으면 
-                if (webPar > 0 || tIndex > 4)
-                {
-                    hIndex++;
-                    tIndex = 0;
-
-
-                    dr["CliPar"] = _par[hIndex];
-                    dr["Handicap"] = _handi[hIndex];
-
-
-                    // 기준파 값이 같으면 Pass, 다르면 Fail 기록
-                    LOG.Write("CliPar = " + _par[hIndex].ToString() + " / WebPar = " + webPar.ToString() + " / Handicap = " + _handi[hIndex].ToString());
-                    if (_par[hIndex] == webPar && _handi[hIndex] != 0)
-                    {
-                        dr["Result"] = "Pass";
-                    }
-                    else
-                    {
-                        dr["Result"] = "Fail";
-                    }
-                }
-                // 기준파 값이 없으면 전장거리 입력
-                else
-                {
-                    dr["CliDistance"] = _distance[tIndex, hIndex];
-                    float webDist = float.Parse(dr["WebDistance"].ToString());
-                    LOG.Write("CliDist = " + _distance[tIndex, hIndex].ToString() + " / WebDist = " + webDist.ToString());
-
-
-                    if (webDist == _distance[tIndex, hIndex])
-                    {
-                        dr["Result"] = "Pass";
-                    }
-                    else
-                    {
-                        dr["Result"] = "Fail";
-                    }
-
-
-                    tIndex++;                   
-                }
-            }
-            */
 
             // 임시 결과 엑셀 익스포트
             EX.Excel2007Export(_DTtempResult, _tempPath + "TempResult.xlsx");
@@ -2956,46 +3003,58 @@ namespace Golfzon_TVNX_Test
 
         private void button2_Click(object sender, EventArgs e)
         {
-            Class.Excel EX = new Class.Excel();
-            GetWebData("102294784");            
-            _DTresult.Merge(_DTtempResult);
-            EX.Excel2007Export(_DTresult, _tempPath + "Result.xlsx");
+            DataTable dt = new DataTable();
+            dt.Columns.Add("FileName", typeof(string));
+            dt.Columns.Add("FileVersion", typeof(string));
+            dt.Columns.Add("FileSize", typeof(string));
+            dt.Columns.Add("FileUpdateDate", typeof(string));
 
-            GetWebData("100000877");
-            _DTresult.Merge(_DTtempResult);
-            EX.Excel2007Export(_DTresult, _tempPath + "Result.xlsx");
+            
+            string[] files = Directory.GetFiles(TXTclientFolderName.Text, "*", SearchOption.AllDirectories);
+            foreach (string path in files)
+            {
+                DataRow dr = dt.NewRow();
+
+                FileInfo info = new FileInfo(path);
+                dr["FileName"] = path;
+                dr["FileVersion"] = FileVersionInfo.GetVersionInfo(path).FileVersion;
+                dr["FileSize"] = info.Length;
+                dr["FileUpdateDate"] = info.LastWriteTime.ToString("yyyy-MM-dd HH:mm:ss");
 
 
+                dt.Rows.Add(dr.ItemArray);                
+            }
 
 
-
-            /*
-            LOG.Write("Recording Start");
-
-            _recordingStartTime = DateTime.Now;
-
-            // 레코드 스레딩
-            _tRecording = new Thread(ThreadRecording);
-            _tRecording.Start();
-            */
+            Excel ex = new Excel();
+            ex.Excel2007Export(dt, _resultPath + "파일정보.xlsx");
         }
         
 
         private void button3_Click(object sender, EventArgs e)
         {
+            Image img = Bitmap.FromFile(_tempPath + @"a.jpg");
+            Bitmap bmp = new Bitmap(img);
+            TXTlog.Text += ImageToString(bmp, "kor");
+
+
+            /*
+
             DEFAULT_APP_NAME = "Touch Screen";
             AutoItX.WinActivate(DEFAULT_APP_NAME);
             Thread.Sleep(1000);
 
 
-            string[] temp = TXTtest3.Text.Split(',');
-            int x = int.Parse(temp[0]);
-            int y = int.Parse(temp[1]);
-            int width = int.Parse(temp[2]);
-            int height = int.Parse(temp[3]);
-
-
-            CapturePartialScreen(x, y, width, height, _imagePath + "h");
+            MouseLClick(1770, 1020);
+            Thread.Sleep(1000);
+            MouseLClick(1770, 1020);
+            Thread.Sleep(1000);
+            MouseLClick(1770, 1020);
+            Thread.Sleep(1000);
+            MouseLClick(1770, 1020);
+            Thread.Sleep(1000);
+            MouseLClick(1770, 1020);
+            Thread.Sleep(1000);
 
 
             AutoItX.WinActivate(Application.ProductName);
@@ -3026,12 +3085,6 @@ namespace Golfzon_TVNX_Test
             */
 
         }
-
-
-
-
-
-
 
 
     }
